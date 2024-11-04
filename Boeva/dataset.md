@@ -1,4 +1,6 @@
-Ссылка на данные: https://drive.google.com/file/d/1Wv4VnTA5Z_o-i7cA2nNH0saYmaMZXFUv/view?usp=drive_link
+Данные до обработки: https://www.kaggle.com/datasets/bwandowando/dota-2-pro-league-matches-2023/code
+
+Данные после обработки: https://drive.google.com/file/d/1Wv4VnTA5Z_o-i7cA2nNH0saYmaMZXFUv/view?usp=drive_link
 
 Описание данных (табличные данные): 
   
