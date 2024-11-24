@@ -2,7 +2,7 @@
 
 ~~Данные после обработки (Dota2_EDA.ipynb): https://drive.google.com/file/d/1Wv4VnTA5Z_o-i7cA2nNH0saYmaMZXFUv/view?usp=drive_link~~
 
-Данные после обработки (Dota2_EDA_new.ipynb): https://drive.google.com/file/d/16HEgmUnfbfw3Q_LSM419w1YSIfYP7UZR/view?usp=drive_link
+Данные за 10 месяцев 2024 (Dota2_EDA_new.ipynb): https://drive.google.com/file/d/16HEgmUnfbfw3Q_LSM419w1YSIfYP7UZR/view?usp=drive_link
 
 
 Описание данных (табличные данные): 
