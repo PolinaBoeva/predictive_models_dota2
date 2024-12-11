@@ -1,3 +1,5 @@
+Данные агрегированные по account_id и командам: https://drive.google.com/file/d/1XqYAH8HrO7MZLaNICZUaXP1fDEl_HaG3/view?usp=drive_link
+
 Данные до обработки: https://www.kaggle.com/datasets/bwandowando/dota-2-pro-league-matches-2023/code
 
 Данные, объединенные за 23-24 год, после обработки пропусков: https://drive.google.com/file/d/18G5kaS8QB4aNjPZ0u7zCATUsf5Ug5hy-/view?usp=drive_link
