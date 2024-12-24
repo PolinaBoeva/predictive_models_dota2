@@ -4,28 +4,14 @@ class DataCleaning:
 
     def fill_nan(self, df):
         """Метод для очистки данных в DataFrame"""
-        # Удаление ненужных столбцов
         df = self._drop_unnecessary_columns(df)
-
-        # Удаление строк с пустыми значениями в 'account_id' и 'win'
         df = self._remove_invalid_rows(df)
-
-        # Заполнение NaN значений в числовых столбцах
         df = self._fill_zero_values(df)
-
-        # Обработка столбца 'kills_per_min'
         df['kills_per_min'] = df.apply(self._fix_kills_per_min, axis=1)
-
-        # Преобразование столбца 'actions_per_min' в числовой формат
         df['actions_per_min'] = pd.to_numeric(df['actions_per_min'], errors='coerce')
-
-        # Удаление матчей с некорректными действиями игроков
         df = self._remove_invalid_matches(df)
-
-        # Фильтрация по game_mode
         df = df[df['game_mode'] == 2]
-
-        return df  # Возвращаем очищенный DataFrame
+        return df  
 
     def _drop_unnecessary_columns(self, df):
         """Удаление ненужных столбцов."""
@@ -34,11 +20,8 @@ class DataCleaning:
 
     def _remove_invalid_rows(self, df):
         """Удаление строк с пустыми значениями в 'account_id' и 'win'."""
-        # Удаление строк с отсутствующими значениями в 'account_id'
         invalid_match_ids = df[df['account_id'].isna()]['match_id'].unique()
         df = df[~df['match_id'].isin(invalid_match_ids)]
-
-        # Удаление строк, где значение в 'win' отсутствует
         df = df[df['win'].notna()]
         return df
 
@@ -58,10 +41,8 @@ class DataCleaning:
 
     def _remove_invalid_matches(self, df):
         """Удаление матчей с некорректными действиями игроков."""
-        # Маска для игроков с actions_per_min = 0 или NaN
         mask_invalid = df['actions_per_min'].isna() | (df['actions_per_min'] == 0)
-
-        # Разделение игроков на Radiant и Dire
+        
         radiant_players = df[df['player_slot'] < 5]
         dire_players = df[df['player_slot'] >= 128]
 
@@ -72,15 +53,12 @@ class DataCleaning:
         invalid_dire_counts = dire_players.groupby('match_id')['actions_per_min'].apply(
             lambda x: (mask_invalid.loc[x.index]).sum()
         )
-
+        
         # Получение match_id, где в Radiant или Dire больше или равно 2 игроков с invalid actions_per_min
         invalid_match_ids_radiant = invalid_radiant_counts[invalid_radiant_counts >= 2].index
         invalid_match_ids_dire = invalid_dire_counts[invalid_dire_counts >= 2].index
 
-        # Объединение match_id для обеих команд
         invalid_match_ids = invalid_match_ids_radiant.union(invalid_match_ids_dire)
-
-        # Удаление строк с такими match_id
         df = df[~df['match_id'].isin(invalid_match_ids)]
         return df
 
@@ -90,31 +68,21 @@ class DataPreprocessing:
 
     def fit_transform(self, df_train):
         """Метод для обработки и агрегации данных для обучающего набора."""
-        # Обрабатываем df_train
         self.df = df_train.copy()
-        df_players_agg = self.aggregate_player_previous_stats(self.df)  # Агрегация по игрокам
+        df_players_agg = self.aggregate_player_previous_stats(self.df) 
 
-        # Агрегируем данные по командам для обучающего набора
         df_team = self.aggregate_team_stats(df_players_agg)
         df_team = df_team.dropna(how='any')
 
         # Сохраняем агрегированные данные для использования в методе transform
         self.df_train_aggregated = df_players_agg
-        return df_team  # Возвращаем агрегированные данные по командам для обучающего набора
+        return df_team
 
     def transform(self, df_test):
         """Метод для трансформации тестового набора на основе обучающих данных."""
         df_test = df_test.copy()  
-
-        # Получаем агрегированные данные для игроков из df_train для теста
         df_test_players_agg = self._get_last_seen_player_stats(df_test)
-
-        # # Заполняем медианными значениями для игроков, которых нет в df_train
-        # df_test_players_agg = self._fill_missing_players(df_test_players_agg)
-
-        # Агрегируем данные по командам для тестового набора
         df_test_team = self.aggregate_team_stats(df_test_players_agg)
-
         return df_test_team
 
     def aggregate_player_previous_stats(self, df_train):
@@ -127,7 +95,6 @@ class DataPreprocessing:
         """Заменяем статистику игроков в тестовом наборе на последние встреченные значения из df_players_agg."""
         df_test_agg = df_test.copy()
 
-        # Список колонок, которые должны быть в итоговом df_test_agg (на основе self.df_train_aggregated)
         player_columns = [
             'previous_kills_avr', 'previous_hero_kills_avr', 'previous_courier_kills_avr',
             'previous_observer_kills_avr', 'previous_kills_per_min_avr', 'previous_kda_avr',
@@ -141,16 +108,14 @@ class DataPreprocessing:
             'previous_win_avr', 'previous_duration_avr', 'previous_first_blood_time_avr'
         ]
 
-        # Колонки, которые должны быть сохранены из оригинального df_test
         columns_to_keep = ['match_id', 'account_id', 'isRadiant', 'radiant_win'] + player_columns
 
         missing_player_data = self.df_train_aggregated[player_columns].median()
 
         # Для каждого account_id из df_test ищем последние встреченные значения в df_players_agg
         for account_id in df_test_agg['account_id'].unique():
-            # Проверка наличия данных для account_id в df_train (агрегированные данные)
             last_seen_stats = self.df_train_aggregated[self.df_train_aggregated['account_id'] == account_id]
-
+            
             if not last_seen_stats.empty:
                 last_seen_stats = last_seen_stats.iloc[-1]  # Берем последние значения для account_id
 
@@ -159,7 +124,7 @@ class DataPreprocessing:
                     for col in player_columns:
                         df_test_agg.loc[df_test_agg['account_id'] == account_id, col] = missing_player_data[col]
 
-                else: # Применяем последние значения для статистик игроков в df_test_agg
+                else: 
                     for col in player_columns:
                         if col in last_seen_stats.index:
                             df_test_agg.loc[df_test_agg['account_id'] == account_id, col] = last_seen_stats[col]
@@ -205,7 +170,6 @@ class DataPreprocessing:
         radiant_stats = self._calculate_team_stats(radiant_df, 'team_1', columns_to_aggregate, stats)
         dire_stats = self._calculate_team_stats(dire_df, 'team_2', columns_to_aggregate, stats)
 
-        # Объединяем результаты по match_id
         df_team = pd.merge(radiant_stats, dire_stats, on='match_id')
 
         radiant_win = df_players_agg[['radiant_win', 'match_id']].groupby('match_id').mean().reset_index()
