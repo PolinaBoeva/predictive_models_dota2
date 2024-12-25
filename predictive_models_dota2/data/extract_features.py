@@ -189,3 +189,84 @@ class DataPreprocessing:
 
         aggregated.columns = new_columns
         return aggregated
+
+class PredictionDataFetcher():
+    def __init__(self):
+        self.data_preprocessing = DataPreprocessing()
+
+    def get_team_info(self, df_upload, df_players_agg):
+        df_upload_agg = self._calculate_player_info(df_upload, df_players_agg)
+        df_team = self._calculate_team_info(df_upload_agg)
+        return df_team
+
+    def _calculate_team_info(self, df_upload_agg): 
+        """Расчет агрегированной статистики по командам на основе агрегированной статистики по действиям игроков за предыдущие матчи"""
+        stats = ['mean', 'max', 'min']
+        columns_to_aggregate = ['previous_kills_avr', 'previous_hero_kills_avr', 'previous_courier_kills_avr',
+                                'previous_observer_kills_avr', 'previous_kills_per_min_avr', 'previous_kda_avr',
+                                'previous_denies_avr', 'previous_hero_healing_avr', 'previous_assists_avr',
+                                'previous_hero_damage_avr', 'previous_deaths_avr', 'previous_gold_per_min_avr',
+                                'previous_total_gold_avr', 'previous_gold_spent_avr', 'previous_level_avr',
+                                'previous_rune_pickups_avr', 'previous_xp_per_min_avr', 'previous_total_xp_avr',
+                                'previous_actions_per_min_avr', 'previous_net_worth_avr', 'previous_teamfight_participation_avr',
+                                'previous_camps_stacked_avr', 'previous_creeps_stacked_avr', 'previous_stuns_avr',
+                                'previous_sentry_uses_avr', 'previous_roshan_kills_avr', 'previous_tower_kills_avr',
+                                'previous_win_avr', 'previous_duration_avr', 'previous_first_blood_time_avr']
+
+        radiant_df = df_upload_agg[df_upload_agg['slot'].isin([0, 1, 2, 3, 4])]
+        dire_df = df_upload_agg[~df_upload_agg['slot'].isin([0, 1, 2, 3, 4])]
+
+        # Агрегируем статистику для каждой команды
+        radiant_stats = self.data_preprocessing._calculate_team_stats(radiant_df, 'team_1', columns_to_aggregate, stats)
+        dire_stats = self.data_preprocessing._calculate_team_stats(dire_df, 'team_2', columns_to_aggregate, stats)
+
+        # Объединяем результаты по match_id
+        df_team = pd.merge(radiant_stats, dire_stats, on='match_id')
+
+        return df_team
+
+    def _calculate_player_info(self, df_upload, df_players_agg):
+        df_players_agg['account_id'] = df_players_agg['account_id'].astype(str)
+        df_upload_agg = df_upload.copy().melt(id_vars=['match_id'], var_name='slot', value_name='account_id')
+        df_upload_agg['slot'] = df_upload_agg['slot'].str.extract('(\d+)')
+        df_upload_agg['slot'] = pd.to_numeric(df_upload_agg['slot'], errors='coerce') 
+        df_upload_agg['account_id'] = df_upload_agg['account_id'].astype(str)
+
+        player_columns = [
+            'previous_kills_avr', 'previous_hero_kills_avr', 'previous_courier_kills_avr',
+            'previous_observer_kills_avr', 'previous_kills_per_min_avr', 'previous_kda_avr',
+            'previous_denies_avr', 'previous_hero_healing_avr', 'previous_assists_avr',
+            'previous_hero_damage_avr', 'previous_deaths_avr', 'previous_gold_per_min_avr',
+            'previous_total_gold_avr', 'previous_gold_spent_avr', 'previous_level_avr',
+            'previous_rune_pickups_avr', 'previous_xp_per_min_avr', 'previous_total_xp_avr',
+            'previous_actions_per_min_avr', 'previous_net_worth_avr', 'previous_teamfight_participation_avr',
+            'previous_camps_stacked_avr', 'previous_creeps_stacked_avr', 'previous_stuns_avr',
+            'previous_sentry_uses_avr', 'previous_roshan_kills_avr', 'previous_tower_kills_avr',
+            'previous_win_avr', 'previous_duration_avr', 'previous_first_blood_time_avr'
+        ]
+
+        columns_to_keep = list(df_upload_agg.columns) + player_columns
+
+        missing_player_data = df_players_agg[player_columns].median()
+
+        for account_id in df_upload_agg['account_id'].unique():
+            last_seen_stats = df_players_agg[df_players_agg['account_id'] == account_id]
+
+            if not last_seen_stats.empty:
+                last_seen_stats = last_seen_stats.iloc[-1]  
+
+                if last_seen_stats.isna().any():
+                    for col in player_columns:
+                        df_upload_agg.loc[df_upload_agg['account_id'] == account_id, col] = missing_player_data[col]
+
+                else:
+                    for col in player_columns:
+                        if col in last_seen_stats.index:
+                            df_upload_agg.loc[df_upload_agg['account_id'] == account_id, col] = last_seen_stats[col]
+            else:
+                for col in player_columns:
+                    df_upload_agg.loc[df_upload_agg['account_id'] == account_id, col] = missing_player_data[col]
+
+        df_upload_agg = df_upload_agg[columns_to_keep]
+
+        return df_upload_agg
