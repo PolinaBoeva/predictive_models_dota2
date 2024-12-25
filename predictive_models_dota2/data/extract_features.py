@@ -1,4 +1,4 @@
-class DataCleaning:
+class DataCleaner:
     def __init__(self):
         pass  
 
@@ -62,39 +62,37 @@ class DataCleaning:
         df = df[~df['match_id'].isin(invalid_match_ids)]
         return df
 
-class DataPreprocessing:
+class DataPreprocessor:
     def __init__(self):
-        self.df_train_aggregated = None  # Для хранения агрегированных данных для X_train
+        self.df_train_aggregated = None
+        self.df_train_team = None
+        self.df_train = None
 
-    def fit_transform(self, df_train):
-        """Метод для обработки и агрегации данных для обучающего набора."""
-        self.df = df_train.copy()
-        df_players_agg = self.aggregate_player_previous_stats(self.df) 
-
+    def fit(self, df_train):
+        self.df_train = df_train.copy()
+        df_players_agg = self.aggregate_player_previous_stats(self.df_train)
+        self.df_train_aggregated = df_players_agg
         df_team = self.aggregate_team_stats(df_players_agg)
         df_team = df_team.dropna(how='any')
+        self.df_train_team = df_team
 
-        # Сохраняем агрегированные данные для использования в методе transform
-        self.df_train_aggregated = df_players_agg
-        return df_team
+    def fit_transform(self, df_train):
+        self.fit(df_train)
+        return self.df_train_team
 
     def transform(self, df_test):
-        """Метод для трансформации тестового набора на основе обучающих данных."""
-        df_test = df_test.copy()  
+        df_test = df_test.copy()
         df_test_players_agg = self._get_last_seen_player_stats(df_test)
         df_test_team = self.aggregate_team_stats(df_test_players_agg)
         return df_test_team
 
     def aggregate_player_previous_stats(self, df_train):
-        """Агрегирование статистики по игрокам в обучающем наборе данных."""
         df_players_agg = df_train.copy()
         self._calculate_expanding_average(df_players_agg)
         return df_players_agg.sort_values(by=['start_date_time'])
 
     def _get_last_seen_player_stats(self, df_test):
-        """Заменяем статистику игроков в тестовом наборе на последние встреченные значения из df_players_agg."""
         df_test_agg = df_test.copy()
-
         player_columns = [
             'previous_kills_avr', 'previous_hero_kills_avr', 'previous_courier_kills_avr',
             'previous_observer_kills_avr', 'previous_kills_per_min_avr', 'previous_kda_avr',
@@ -107,42 +105,33 @@ class DataPreprocessing:
             'previous_sentry_uses_avr', 'previous_roshan_kills_avr', 'previous_tower_kills_avr',
             'previous_win_avr', 'previous_duration_avr', 'previous_first_blood_time_avr'
         ]
-
         columns_to_keep = ['match_id', 'account_id', 'isRadiant', 'radiant_win'] + player_columns
-
         missing_player_data = self.df_train_aggregated[player_columns].median()
 
-        # Для каждого account_id из df_test ищем последние встреченные значения в df_players_agg
         for account_id in df_test_agg['account_id'].unique():
             last_seen_stats = self.df_train_aggregated[self.df_train_aggregated['account_id'] == account_id]
-            
-            if not last_seen_stats.empty:
-                last_seen_stats = last_seen_stats.iloc[-1]  # Берем последние значения для account_id
 
+            if not last_seen_stats.empty:
+                last_seen_stats = last_seen_stats.iloc[-1]
                 if last_seen_stats.isna().any():
-                    # Если есть NaN, заполняем медианными значениями для всех соответствующих колонок
                     for col in player_columns:
                         df_test_agg.loc[df_test_agg['account_id'] == account_id, col] = missing_player_data[col]
-
-                else: 
+                else:
                     for col in player_columns:
                         if col in last_seen_stats.index:
                             df_test_agg.loc[df_test_agg['account_id'] == account_id, col] = last_seen_stats[col]
             else:
-                # Если для account_id нет данных в df_train, заполнить медианными значениями
                 for col in player_columns:
                     df_test_agg.loc[df_test_agg['account_id'] == account_id, col] = missing_player_data[col]
 
         df_test_agg = df_test_agg[columns_to_keep]
-
         return df_test_agg
 
     def _calculate_expanding_average(self, df_players_agg):
-        """Расчет агрегированной статистики по действиям игроков за предыдущие матчи."""
         groupby_cols = 'account_id'
         group_cols = ['kills', 'hero_kills', 'courier_kills', 'observer_kills', 'kills_per_min', 'kda', 'denies',
                       'hero_healing', 'assists', 'hero_damage', 'deaths', 'gold_per_min', 'total_gold', 'gold_spent',
-                      'level', 'rune_pickups', 'xp_per_min', 'total_xp', 'actions_per_min', 'net_worth','teamfight_participation',
+                      'level', 'rune_pickups', 'xp_per_min', 'total_xp', 'actions_per_min', 'net_worth', 'teamfight_participation',
                       'camps_stacked', 'creeps_stacked', 'stuns', 'sentry_uses', 'roshan_kills', 'tower_kills', 'win',
                       'duration', 'first_blood_time']
 
@@ -150,7 +139,6 @@ class DataPreprocessing:
             df_players_agg[f'previous_{col}_avr'] = df_players_agg.groupby(groupby_cols)[col].transform(lambda x: x.shift().expanding().mean())
 
     def aggregate_team_stats(self, df_players_agg):
-        """Расчет агрегированной статистики по командам на основе агрегированной статистики по действиям игроков за предыдущие матчи"""
         stats = ['mean', 'max', 'min']
         columns_to_aggregate = ['previous_kills_avr', 'previous_hero_kills_avr', 'previous_courier_kills_avr',
                                 'previous_observer_kills_avr', 'previous_kills_per_min_avr', 'previous_kda_avr',
@@ -166,19 +154,16 @@ class DataPreprocessing:
         radiant_df = df_players_agg[df_players_agg['isRadiant'] == 1]
         dire_df = df_players_agg[df_players_agg['isRadiant'] == 0]
 
-        # Агрегируем статистику для каждой команды
         radiant_stats = self._calculate_team_stats(radiant_df, 'team_1', columns_to_aggregate, stats)
         dire_stats = self._calculate_team_stats(dire_df, 'team_2', columns_to_aggregate, stats)
 
         df_team = pd.merge(radiant_stats, dire_stats, on='match_id')
-
         radiant_win = df_players_agg[['radiant_win', 'match_id']].groupby('match_id').mean().reset_index()
         df_team = df_team.merge(radiant_win, on='match_id')
 
         return df_team
 
     def _calculate_team_stats(self, team_df, team_name, columns_to_aggregate, stats):
-        """Агрегация статистики по команде."""
         aggregation_dict = {col: stats for col in columns_to_aggregate}
         aggregated = team_df.groupby('match_id').agg(aggregation_dict)
 
@@ -192,7 +177,7 @@ class DataPreprocessing:
 
 class PredictionDataFetcher():
     def __init__(self):
-        self.data_preprocessing = DataPreprocessing()
+        self.data_preprocessing = DataPreprocessor()
 
     def get_team_info(self, df_upload, df_players_agg):
         df_upload_agg = self._calculate_player_info(df_upload, df_players_agg)
