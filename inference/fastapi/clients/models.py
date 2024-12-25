@@ -14,4 +14,3 @@ class ModelsClient:
 
     def get_model_info(self, model_id: str):
         pass
-    
