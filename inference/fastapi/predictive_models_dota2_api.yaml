@@ -1,0 +1,256 @@
+openapi: 3.0.0
+info:
+    title: Predictive Models Dota2 API
+    version: "1.0"
+    description: >
+        API для обучения моделей предсказания исхода игр (Radiant/Dire).
+servers:
+    - url: http://localhost:8000
+paths:
+    /api/v1/models/predict:
+        post:
+            summary: Прогноз исхода на основе выбора героев
+            operationId: predict
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/SinglePredictRequest"
+            responses:
+                "200":
+                    description: Результаты прогноза
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/PredictResponse"
+
+    /api/v1/models/predict_csv:
+        post:
+            summary: Прогноз исхода по загруженному CSV
+            operationId: predictCsv
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            $ref: "#/components/schemas/CSVPredictRequest"
+            responses:
+                "200":
+                    description: Результат прогноза для каждой строки CSV
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/PredictCsvResponse"
+
+    /api/v1/models/fit:
+        post:
+            summary: Обучение модели
+            operationId: fitModel
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/FitRequest"
+            responses:
+                "200":
+                    description: Статус обучения модели
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/FitResponse"
+
+    /api/v1/models/model_info:
+        get:
+            summary: Получить информацию о модели
+            operationId: getModelInfo
+            parameters:
+                - in: query
+                  name: model_id
+                  required: true
+                  schema:
+                      type: string
+                  description: "Идентификатор модели"
+            responses:
+                "200":
+                    description: Подробные данные о модели
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ModelInfoResponse"
+
+components:
+    schemas:
+        ModelId:
+            type: string
+            example: "model_x"
+
+        ModelType:
+            type: string
+            enum:
+                - "CatBoost"
+                - "RidgeClassifier"
+            example: "CatBoost"
+
+        Hyperparameters:
+            type: object
+            additionalProperties:
+                type: any
+            example:
+                learning_rate: 0.1
+                depth: 6
+
+        Prediction:
+            type: string
+            enum:
+                - "Radiant"
+                - "Dire"
+            example: "Radiant"
+
+        PredictionProba:
+            type: number
+            format: float
+            minimum: 0
+            maximum: 1
+            example: 0.75
+
+        Player:
+            type: object
+            properties:
+                account_id:
+                    type: integer
+                    example: 123456
+                hero_name:
+                    type: string
+                    example: "Invoker"
+
+        Team:
+            type: array
+            items:
+                $ref: "#/components/schemas/Player"
+            minItems: 5
+            maxItems: 5
+
+        CSVFile:
+            type: string
+            format: binary
+
+        FeatureImportances:
+            type: array
+            items:
+                type: object
+                properties:
+                    feature:
+                        type: string
+                        example: "hero_id"
+                    importance:
+                        type: number
+                        format: float
+                        example: 0.12
+
+        FitTime:
+            type: number
+            format: float
+            example: 12.34
+            minimum: 0
+
+        SinglePredictRequest:
+            type: object
+            properties:
+                radiant:
+                    description: "Состав команды Radiant"
+                    $ref: "#/components/schemas/Team"
+                dire:
+                    description: "Состав команды Dire"
+                    $ref: "#/components/schemas/Team"
+            required:
+                - radiant
+                - dire
+
+        CSVPredictRequest:
+            type: object
+            properties:
+                file:
+                    description: "CSV файл с данными для прогноза"
+                    $ref: "#/components/schemas/CSVFile"
+            required:
+                - file
+
+        PredictResponse:
+            type: object
+            properties:
+                prediction:
+                    $ref: "#/components/schemas/Prediction"
+                prediction_proba:
+                    $ref: "#/components/schemas/PredictionProba"
+            required:
+                - prediction
+                - prediction_proba
+
+        PredictCsvResponse:
+            type: object
+            properties:
+                predictions:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/Prediction"
+                    description: "Список предсказаний для каждой строки"
+                    example:
+                        - "Radiant"
+                        - "Dire"
+                        - "Radiant"
+                prediction_probas:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/PredictionProba"
+                    description: "Список вероятностей победы Radiant"
+                    example:
+                        - 0.75
+                        - 0.45
+                        - 0.80
+
+        FitRequest:
+            type: object
+            properties:
+                model_id:
+                    $ref: "#/components/schemas/ModelId"
+                model_type:
+                    $ref: "#/components/schemas/ModelType"
+                hyperparameters:
+                    $ref: "#/components/schemas/Hyperparameters"
+            required:
+                - model_id
+                - model_type
+                - hyperparameters
+
+        FitResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                    example: true
+                message:
+                    type: string
+                    example: "Модель успешно обучена"
+
+        ModelInfoResponse:
+            type: object
+            properties:
+                model_id:
+                    $ref: "#/components/schemas/ModelId"
+                model_type:
+                    $ref: "#/components/schemas/ModelType"
+                feature_importances:
+                    $ref: "#/components/schemas/FeatureImportances"
+                fit_time:
+                    type: number
+                    format: float
+                    example: 12.34
+                metrics:
+                    type: object
+                    additionalProperties:
+                        type: number
+                    example:
+                        accuracy: 0.95
+                        roc_auc: 0.93
