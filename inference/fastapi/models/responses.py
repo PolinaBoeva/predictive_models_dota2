@@ -21,3 +21,4 @@ class ModelInfoResponse(BaseModel):
     feature_importances: List[Dict[str, Any]]
     fit_time: float
     metrics: Dict[str, float]
+    

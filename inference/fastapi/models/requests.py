@@ -16,3 +16,4 @@ class FitRequest(BaseModel):
     model_type: ModelType
     model_id: ModelId
     hyperparameters: Hyperparameters
+    
