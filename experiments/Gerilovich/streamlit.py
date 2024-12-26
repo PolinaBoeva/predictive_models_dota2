@@ -2,10 +2,11 @@ import streamlit as st
 import requests
 import time
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import KFold
-from sklearn.metrics import mean_squared_error
-from catboost import CatBoostRegressor
-from sklearn.linear_model import Ridge
+from sklearn.metrics import accuracy_score
+from catboost import CatBoostClassifier
+from sklearn.linear_model import RidgeClassifier
 
 # Классы API
 class ModelAPI:
@@ -24,27 +25,30 @@ class ModelAPI:
 
 # API клиент
 host = "http://****"  # Замените на рабочий хост
-port = 8000         # Замените на рабочий порт
+port = 8000          # Замените на рабочий порт
 api_client = ModelAPI(host, port)
 
-# название
+# Заголовок приложения
 st.title("Модель по анализу данных")
 
-# Стороннее меню
-page = st.sidebar.selectbox("Выберите страницу", ["Обучение модели", "Информация о модели"])
+# Навигация между страницами
+st.sidebar.header("Быстрое меню")
+page = st.sidebar.radio("Выберите страницу", ["Обучение модели", "Информация о модели"])
 
 if page == "Обучение модели":
-    # типы модели
-    type_of_model = st.selectbox("Выберите модель", ["Linear Regression", "CatBoost"])
+    st.header("Обучение модели")
+    
+    # Типы модели
+    type_of_model = st.selectbox("Выберите модель", ["Ridge Classifier", "CatBoost Classifier"])
 
-    # параметры моделей
+    # Параметры моделей
     params = {"type_of_model": type_of_model}
 
-    if type_of_model == "Linear Regression":
-        params["alpha"] = st.number_input("Alpha", value=0.01, min_value=0.0)
+    if type_of_model == "Ridge Classifier":
+        params["alpha"] = st.number_input("Alpha", value=1.0, min_value=0.0)
         params["fit_intercept"] = st.checkbox("Fit Intercept", value=True)
 
-    elif type_of_model == "CatBoost":
+    elif type_of_model == "CatBoost Classifier":
         params["learning_rate"] = st.number_input("Learning Rate", value=0.1, min_value=0.01, max_value=1.0)
         params["depth"] = st.slider("Depth", min_value=1, max_value=16, value=6)
         params["iterations"] = st.number_input("Iterations", value=100, min_value=1)
@@ -53,28 +57,36 @@ if page == "Обучение модели":
     # ID модели
     params["model_id"] = st.text_input("Введите ID модели", value="model")
 
-    # загрузка файла
+    # Загрузка файла
     uploaded_file = st.file_uploader("Загрузите данные (CSV)", type=["csv"])
     if uploaded_file is not None:
         data = pd.read_csv(uploaded_file)
         st.write("Данные:")
         st.write(data.head())
 
-        # выбор целевой переменной
-        target_column = st.selectbox("Выберите целевую переменную", data.columns)
-        X = data.drop(columns=[target_column])
-        y = data[target_column]
+        # Устанавливаем целевую переменную без выбора
+        target_column = "radiant_win"
+        if target_column in data.columns:
+            X = data.drop(columns=[target_column])
+            y = data[target_column]
+            
+            # Отображение целевой переменной на экране
+            st.subheader(f"Целевая переменная: {target_column}")
+            st.write(y.value_counts())  # Показываем распределение целевой переменной
+        else:
+            st.error(f"Целевая переменная '{target_column}' не найдена в данных.")
+            st.stop()
 
-        # обучение модели
+        # Обучение модели
         if st.button("Обучить модель"):
             params["train_data"] = data.to_dict(orient="list")
-            start_time = time.time()  # засекаем время обучения модели
+            start_time = time.time()  # Засекаем время обучения модели
 
-            # проводим кросс-валидацию локально
-            if type_of_model == "Linear Regression":
-                model = Ridge(alpha=params["alpha"], fit_intercept=params["fit_intercept"])
-            elif type_of_model == "CatBoost":
-                model = CatBoostRegressor(
+            # Проводим кросс-валидацию локально
+            if type_of_model == "Ridge Classifier":
+                model = RidgeClassifier(alpha=params["alpha"], fit_intercept=params["fit_intercept"])
+            elif type_of_model == "CatBoost Classifier":
+                model = CatBoostClassifier(
                     learning_rate=params["learning_rate"],
                     depth=params["depth"],
                     iterations=params["iterations"],
@@ -91,24 +103,24 @@ if page == "Обучение модели":
 
                 model.fit(X_train, y_train)
                 predictions = model.predict(X_test)
-                rmse = mean_squared_error(y_test, predictions, squared=False)
-                fold_results.append(rmse)
+                accuracy = accuracy_score(y_test, predictions)
+                fold_results.append(accuracy)
 
-            mean_rmse = np.mean(fold_results)
-            std_rmse = np.std(fold_results)
+            mean_accuracy = np.mean(fold_results)
+            std_accuracy = np.std(fold_results)
 
             end_time = time.time()
 
-            # обработка результата
+            # Обработка результата
             st.success("Модель обучена!")
             st.write(f"Время обучения составило: {end_time - start_time:.2f} сек")
             st.write("Результаты кросс-валидации:")
-            st.write(pd.DataFrame({"Fold": range(1, 6), "RMSE": fold_results}))
-            st.write(f"Средний RMSE: {mean_rmse:.4f}")
-            st.write(f"Стандартное отклонение RMSE: {std_rmse:.4f}")
+            st.write(pd.DataFrame({"Fold": range(1, 6), "Accuracy": fold_results}))
+            st.write(f"Средняя точность: {mean_accuracy:.4f}")
+            st.write(f"Стандартное отклонение точности: {std_accuracy:.4f}")
 
-            # важность признаков для CatBoost
-            if type_of_model == "CatBoost":
+            # Важность признаков для CatBoost
+            if type_of_model == "CatBoost Classifier":
                 feature_importances = model.get_feature_importance()
                 feature_importances_df = pd.DataFrame({
                     "Feature": X.columns,
@@ -119,6 +131,7 @@ if page == "Обучение модели":
 
 elif page == "Информация о модели":
     st.header("Информация о модели")
+    
     model_id = st.text_input("Введите ID модели для получения информации", value="model")
 
     if st.button("Получить информацию о модели"):
@@ -127,7 +140,7 @@ elif page == "Информация о модели":
             st.write("Информация о модели:")
             st.json(model_info)
 
-            # важность признаков
+            # Важность признаков
             if "feature_importances" in model_info:
                 st.write("Важность признаков:")
                 feature_importances = model_info["feature_importances"]
