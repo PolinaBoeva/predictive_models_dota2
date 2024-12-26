@@ -1,11 +1,4 @@
-# Предсказательные модели для Dota 2 
-**Куратор**
-* Макарова Мария - @mariagolddd
+# EDA в Streamlit
+**Ссылка**: https://predictivemodelsdota2-s5mdzjfqken55orn4hydn6.streamlit.app/
+**Данные для теста**: https://disk.yandex.ru/d/k74N8zatrN62xQ
 
-**Участники**
-* Боева Полина Викторовна — @Boeva_pv, PolinaBoeva
-* Бородачев Сергей Игоревич — @RaiFox, Rai-Fox
-* Герилович Илья Павлович — @mrbrainers, ilyager99
-* Чаплыгина Арина Сергеевна — @chaarse, chaarse
-
-Проект разработки сервиса, который по ID матча выдает вероятность победы той или иной команды в Dota 2, а также строит различные сегментационные карты (хитмапы) по результатам игры.
