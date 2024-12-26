@@ -24,7 +24,7 @@ class ModelAPI:
 
 # API клиент
 host = "http://****"  # Замените на рабочий хост
-port = ****          # Замените на рабочий порт
+port = 8000         # Замените на рабочий порт
 api_client = ModelAPI(host, port)
 
 # название
