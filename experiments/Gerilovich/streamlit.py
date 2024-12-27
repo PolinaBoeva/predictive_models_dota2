@@ -9,6 +9,7 @@ from catboost import CatBoostClassifier
 from sklearn.linear_model import RidgeClassifier
 from sklearn.preprocessing import LabelEncoder
 
+# классы
 class ModelAPI:
     def __init__(self, host: str, port: int):
         self.base_url = f"{host}:{port}/api/v1/models"
