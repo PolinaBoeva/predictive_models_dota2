@@ -91,6 +91,12 @@ class DataPreprocessor:
         self._calculate_expanding_average(df_players_agg)
         return df_players_agg.sort_values(by=['start_date_time'])
 
+    def get_player_previous_last_stats(self):
+        df_last_player_stats = self.df_train_aggregated.copy().drop_duplicates(subset='account_id', keep='last')
+        numeric_columns = self.df_train_aggregated.select_dtypes(include=['number'])
+        missing_player_data = numeric_columns.median()
+        return df_last_player_stats, missing_player_data
+
     def _get_last_seen_player_stats(self, df_test):
         df_test_agg = df_test.copy()
         player_columns = [
@@ -106,25 +112,16 @@ class DataPreprocessor:
             'previous_win_avr', 'previous_duration_avr', 'previous_first_blood_time_avr'
         ]
         columns_to_keep = ['match_id', 'account_id', 'isRadiant', 'radiant_win'] + player_columns
-        missing_player_data = self.df_train_aggregated[player_columns].median()
 
-        for account_id in df_test_agg['account_id'].unique():
-            last_seen_stats = self.df_train_aggregated[self.df_train_aggregated['account_id'] == account_id]
+        df_last_player_stats, missing_player_data = self.player_previous_last_stats
 
-            if not last_seen_stats.empty:
-                last_seen_stats = last_seen_stats.iloc[-1]
-                if last_seen_stats.isna().any():
-                    for col in player_columns:
-                        df_test_agg.loc[df_test_agg['account_id'] == account_id, col] = missing_player_data[col]
-                else:
-                    for col in player_columns:
-                        if col in last_seen_stats.index:
-                            df_test_agg.loc[df_test_agg['account_id'] == account_id, col] = last_seen_stats[col]
-            else:
-                for col in player_columns:
-                    df_test_agg.loc[df_test_agg['account_id'] == account_id, col] = missing_player_data[col]
+        df_test_agg = pd.merge(df_test_agg, df_last_player_stats, on='account_id', how='left')
+
+        for column in player_columns:
+            df_test_agg[column] = df_test_agg[column].fillna(missing_player_data[column])
 
         df_test_agg = df_test_agg[columns_to_keep]
+
         return df_test_agg
 
     def _calculate_expanding_average(self, df_players_agg):
@@ -175,20 +172,30 @@ class DataPreprocessor:
         aggregated.columns = new_columns
         return aggregated
 
+@dataclass
+class Player:
+    account_id: int
+    hero_name: str = None
+
+@dataclass
+class Match:
+    dire: List[Player]
+    radiant: List[Player]
+
 class PredictionDataFetcher():
     def __init__(self):
         self.data_preprocessing = DataPreprocessor()
 
-    def get_team_info(self, data: Union['Match', pd.DataFrame], df_players_agg: pd.DataFrame) -> pd.DataFrame:
-        """Метод для работы с dataclass или DataFrame, возвращающий DataFrame"""
-        if isinstance(data, Match):
-            return self._calculate_team_info_from_dataclass(data, df_players_agg)
-        elif isinstance(data, pd.DataFrame):
-            df_upload_agg = self._calculate_player_info_from_dataframe(df_upload, df_players_agg)
-            df_team = self._calculate_team_info_from_dataframe(df_upload_agg)
-            return df_team
+    def get_team_info_from_dataclass(self, match: Match, df_players_agg: pd.DataFrame) -> pd.DataFrame:
+        """Метод для работы с dataclass"""
+        return self._calculate_team_info_from_dataclass(match, df_players_agg)
 
-    def _calculate_team_info_from_dataclass(self, match: 'Match', df_players_agg: pd.DataFrame) -> pd.DataFrame:
+    def get_team_info_from_dataframe(self, df_upload: pd.DataFrame, df_players_agg: pd.DataFrame, missing_player_data: pd.DataFrame) -> pd.DataFrame:
+        df_upload_agg = self._calculate_player_info_from_dataframe(df_upload, df_players_agg, missing_player_data)
+        df_team = self._calculate_team_info_from_dataframe(df_upload_agg)
+        return df_team
+
+    def _calculate_team_info_from_dataclass(self, match: Match, df_players_agg: pd.DataFrame) -> pd.DataFrame:
         """Агрегирует статистику по команде, когда данные подаются в виде dataclass."""
         stats = ['mean', 'max', 'min']
         columns_to_aggregate = [
@@ -203,16 +210,17 @@ class PredictionDataFetcher():
             'previous_sentry_uses_avr', 'previous_roshan_kills_avr', 'previous_tower_kills_avr',
             'previous_win_avr', 'previous_duration_avr', 'previous_first_blood_time_avr'
         ]
+        radiant_stats = pd.DataFrame([{
+            **{col: df_players_agg[df_players_agg['account_id'] == float(player.account_id)].iloc[-1][col]
+              for col in columns_to_aggregate},
+            'match_id': 1
+        } for player in match.radiant])
 
-        self._assign_player_stats(match.radiant, df_players_agg, columns_to_aggregate)
-        self._assign_player_stats(match.dire, df_players_agg, columns_to_aggregate)
-
-        radiant_stats = pd.DataFrame([player.stats for player in match.radiant])
-        dire_stats = pd.DataFrame([player.stats for player in match.dire])
-        
-        # Добавляем match_id как фиктивное значение для объединения
-        radiant_stats['match_id'] = 1
-        dire_stats['match_id'] = 1
+        dire_stats = pd.DataFrame([{
+            **{col: df_players_agg[df_players_agg['account_id'] == float(player.account_id)].iloc[-1][col]
+              for col in columns_to_aggregate},
+            'match_id': 1
+        } for player in match.dire])
 
         radiant_stats = self.data_preprocessing._calculate_team_stats(radiant_stats, 'team_1', columns_to_aggregate, stats)
         dire_stats = self.data_preprocessing._calculate_team_stats(dire_stats, 'team_2', columns_to_aggregate, stats)
@@ -220,12 +228,6 @@ class PredictionDataFetcher():
         df_team = pd.merge(radiant_stats, dire_stats, on='match_id')
 
         return df_team
-
-    def _assign_player_stats(self, players: List['Player'], df_players_agg: pd.DataFrame, columns_to_aggregate: List[str]):
-        """Метод для подтягивания статистики из df_players_agg в Player"""
-        for player in players:
-            player_stats = df_players_agg[df_players_agg['account_id'] == str(player.account_id)].iloc[-1]
-            player.stats = {col: player_stats[col] for col in columns_to_aggregate}  
 
     def _calculate_team_info_from_dataframe(self, df_upload_agg: pd.DataFrame) -> pd.DataFrame:
         """Расчет агрегированной статистики по командам на основе агрегированной статистики по действиям игроков за предыдущие матчи"""
@@ -241,61 +243,45 @@ class PredictionDataFetcher():
                                 'previous_sentry_uses_avr', 'previous_roshan_kills_avr', 'previous_tower_kills_avr',
                                 'previous_win_avr', 'previous_duration_avr', 'previous_first_blood_time_avr']
 
-        # Делим на команды Radiant и Dire
         radiant_df = df_upload_agg[df_upload_agg['slot'].isin([0, 1, 2, 3, 4])]
         dire_df = df_upload_agg[~df_upload_agg['slot'].isin([0, 1, 2, 3, 4])]
 
-        # Агрегируем статистику для каждой команды
         radiant_stats = self.data_preprocessing._calculate_team_stats(radiant_df, 'team_1', columns_to_aggregate, stats)
         dire_stats = self.data_preprocessing._calculate_team_stats(dire_df, 'team_2', columns_to_aggregate, stats)
 
-        # Объединяем результаты по match_id
         df_team = pd.merge(radiant_stats, dire_stats, on='match_id')
 
         return df_team
 
-    def _calculate_player_info_from_dataframe(self, df_upload: pd.DataFrame, df_players_agg: pd.DataFrame) -> pd.DataFrame:
+    def _calculate_player_info_from_dataframe(self, df_upload: pd.DataFrame, df_last_player_stats: pd.DataFrame, missing_player_data: pd.DataFrame) -> pd.DataFrame:
           """Метод для получения значений из df_players_agg"""
-          df_players_agg['account_id'] = df_players_agg['account_id'].astype(str)
+          df_players_agg['account_id'] = df_players_agg['account_id'].astype(float)
           df_upload_agg = df_upload.copy().melt(id_vars=['match_id'], var_name='slot', value_name='account_id')
           df_upload_agg['slot'] = df_upload_agg['slot'].str.extract('(\d+)')
-          df_upload_agg['slot'] = pd.to_numeric(df_upload_agg['slot'], errors='coerce') 
-          df_upload_agg['account_id'] = df_upload_agg['account_id'].astype(str)
-
+          df_upload_agg['slot'] = pd.to_numeric(df_upload_agg['slot'], errors='coerce')
+          df_upload_agg['account_id'] = df_upload_agg['account_id'].astype(float)
           player_columns = [
-              'previous_kills_avr', 'previous_hero_kills_avr', 'previous_courier_kills_avr',
-              'previous_observer_kills_avr', 'previous_kills_per_min_avr', 'previous_kda_avr',
-              'previous_denies_avr', 'previous_hero_healing_avr', 'previous_assists_avr',
-              'previous_hero_damage_avr', 'previous_deaths_avr', 'previous_gold_per_min_avr',
-              'previous_total_gold_avr', 'previous_gold_spent_avr', 'previous_level_avr',
-              'previous_rune_pickups_avr', 'previous_xp_per_min_avr', 'previous_total_xp_avr',
-              'previous_actions_per_min_avr', 'previous_net_worth_avr', 'previous_teamfight_participation_avr',
-              'previous_camps_stacked_avr', 'previous_creeps_stacked_avr', 'previous_stuns_avr',
-              'previous_sentry_uses_avr', 'previous_roshan_kills_avr', 'previous_tower_kills_avr',
-              'previous_win_avr', 'previous_duration_avr', 'previous_first_blood_time_avr'
-          ]
+                        'previous_kills_avr', 'previous_hero_kills_avr', 'previous_courier_kills_avr',
+                        'previous_observer_kills_avr', 'previous_kills_per_min_avr', 'previous_kda_avr',
+                        'previous_denies_avr', 'previous_hero_healing_avr', 'previous_assists_avr',
+                        'previous_hero_damage_avr', 'previous_deaths_avr', 'previous_gold_per_min_avr',
+                        'previous_total_gold_avr', 'previous_gold_spent_avr', 'previous_level_avr',
+                        'previous_rune_pickups_avr', 'previous_xp_per_min_avr', 'previous_total_xp_avr',
+                        'previous_actions_per_min_avr', 'previous_net_worth_avr', 'previous_teamfight_participation_avr',
+                        'previous_camps_stacked_avr', 'previous_creeps_stacked_avr', 'previous_stuns_avr',
+                        'previous_sentry_uses_avr', 'previous_roshan_kills_avr', 'previous_tower_kills_avr',
+                        'previous_win_avr', 'previous_duration_avr', 'previous_first_blood_time_avr'
+                    ]
 
           columns_to_keep = list(df_upload_agg.columns) + player_columns
+          columns_to_stats = player_columns + ['account_id']
+                    
+          df_players_agg['account_id'] = df_players_agg['account_id'].astype(float)
+          df_upload_agg['account_id'] = df_upload_agg['account_id'].astype(float)
+          df_upload_agg = pd.merge(df_upload_agg, df_players_agg[columns_to_stats], on='account_id', how='left')
 
-          missing_player_data = df_players_agg[player_columns].median()
-
-          for account_id in df_upload_agg['account_id'].unique():
-              last_seen_stats = df_players_agg[df_players_agg['account_id'] == account_id]
-
-              if not last_seen_stats.empty:
-                  last_seen_stats = last_seen_stats.iloc[-1]  
-
-                  if last_seen_stats.isna().any():
-                      for col in player_columns:
-                          df_upload_agg.loc[df_upload_agg['account_id'] == account_id, col] = missing_player_data[col]
-
-                  else:
-                      for col in player_columns:
-                          if col in last_seen_stats.index:
-                              df_upload_agg.loc[df_upload_agg['account_id'] == account_id, col] = last_seen_stats[col]
-              else:
-                  for col in player_columns:
-                      df_upload_agg.loc[df_upload_agg['account_id'] == account_id, col] = missing_player_data[col]
+          for column in player_columns:
+              df_upload_agg[column] = df_upload_agg[column].fillna(missing_player_data[column])
 
           df_upload_agg = df_upload_agg[columns_to_keep]
 
