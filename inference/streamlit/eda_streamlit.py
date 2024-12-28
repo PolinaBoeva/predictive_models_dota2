@@ -46,14 +46,15 @@ def run_eda_streamlit():
             with st.expander("### Посмотреть статистику по игроку"):
                 match_count = df.groupby('account_id')['match_id'].count()
                 most_matches_account_id = match_count.idxmax()
-                account_ids = df['account_id'].unique()
+
+                account_ids = sorted(df['account_id'].unique())
+                default_index = account_ids.index(most_matches_account_id)
 
                 selected_account_id = st.selectbox(
                     "Пожалуйста, выберите account_id игрока, по которому хотите посмотреть статистику:",
                     account_ids,
-                    index=list(account_ids).index(most_matches_account_id)
+                    index=default_index  # игрок с наибольшим количеством матчей по умолчанию
                 )
-
                 player_data = df[df['account_id'] == selected_account_id]
 
                 st.write("##### Герои игрока и статистика по ним:")
@@ -124,19 +125,20 @@ def run_eda_streamlit():
             st.write("### Статистика по выбранному матчу")
             with st.expander("### Посмотреть статистику по матчу"):
                 max_players_match_id = str(df['match_id'].value_counts().idxmax())
-                match_ids = [str(match_id) for match_id in
-                             df['match_id'].unique()]
+
+                match_ids = sorted([str(match_id) for match_id in df['match_id'].unique()])
+
+                default_index = match_ids.index(max_players_match_id)
 
                 selected_match_id = st.selectbox(
                     "Пожалуйста, выберите match_id, по которому хотите посмотреть статистику:",
-                    match_ids, index=match_ids.index(max_players_match_id))
+                    match_ids,
+                    index=default_index)
 
-                match_data = df[
-                    df['match_id'] == int(selected_match_id)]  # Приводим обратно к int для фильтрации данных
+                match_data = df[df['match_id'] == int(selected_match_id)]
 
                 # Какая команда победила
                 radiant_win = match_data['isRadiant'].iloc[0] == 1 and match_data['win'].iloc[0] == 1
-                dire_win = match_data['isRadiant'].iloc[0] == 0 and match_data['win'].iloc[0] == 1
                 winning_team = "Radiant" if radiant_win else "Dire"
                 st.write(f"### Победившая команда: *{winning_team}*")
 
