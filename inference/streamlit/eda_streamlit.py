@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+
 from utils import get_top_10_heroes
 from plots import plot_metric_histogram, create_result_pie_chart, create_kills_bar_chart, create_deaths_plot,\
     create_top_10_heroes_plot, create_selected_heroes_plot, create_box_plot, create_winrate_pie_chart,\
@@ -158,18 +159,23 @@ def run_eda_streamlit():
                 }).reset_index()
                 st.write(important_stats)
 
-                st.write("#### Распределение убийств по героям")
+                st.write("#### Распределение различных паременных по героям")
                 selected_heroes = st.multiselect("Выберите героев для отображения (по умолчанию - 10 самых популярных)",
                                                  options=df['hero_name'].tolist(),
                                                  default=top_10_heroes)
 
                 filtered_df = df[df["hero_name"].isin(selected_heroes)]
 
-                fig1 = create_selected_heroes_plot(filtered_df)
+                attribute = st.selectbox(
+                    "Выберите переменную для отображения:",
+                    options=['kills', 'deaths', 'assists', 'hero_damage', 'hero_healing', 'gold_per_min', 'net_worth',
+                             'xp_per_min'])
+
+                fig1 = create_selected_heroes_plot(filtered_df, attribute)
                 st.plotly_chart(fig1)
 
-                st.write("#### Box-plot распределения убийств по выбранным героям")
-                fig2 = create_box_plot(filtered_df)
+                st.write("#### Box-plot распределения переменной по выбранным героям")
+                fig2 = create_box_plot(filtered_df, attribute)
                 st.plotly_chart(fig2)
 
 
