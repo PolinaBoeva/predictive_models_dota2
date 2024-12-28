@@ -26,7 +26,7 @@ def run_eda_streamlit():
         def display_dataset_info(df):
             st.write("### Основная информация о данных")
             with st.expander("### Посмотреть основную информацию"):
-                st.dataframe(df)
+                st.dataframe(df.head(2000))
                 st.write(f"**Размер датасета:** {df.shape[0]} строк, {df.shape[1]} столбцов")
 
                 st.write("#### Типы данных:")
@@ -159,7 +159,7 @@ def run_eda_streamlit():
                 }).reset_index()
                 st.write(important_stats)
 
-                st.write("#### Распределение различных паременных по героям")
+                st.write("#### Распределение выбранной переменной по героям")
                 selected_heroes = st.multiselect("Выберите героев для отображения (по умолчанию - 10 самых популярных)",
                                                  options=df['hero_name'].tolist(),
                                                  default=top_10_heroes)
