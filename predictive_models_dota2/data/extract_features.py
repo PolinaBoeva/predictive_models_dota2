@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Iterable
 from dataclasses import dataclass
 
 class DataCleaner:
@@ -10,35 +10,21 @@ class DataCleaner:
     def fill_nan(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Метод для очистки данных в DataFrame.
-        
+
         Args:
             df (pd.DataFrame): Исходный DataFrame с данными матчей.
-        
+
         Returns:
             pd.DataFrame: Очищенный DataFrame.
         """
-        df = self._drop_unnecessary_columns(df)
         df = self._remove_invalid_rows(df)
         df = self._fill_zero_values(df)
-        df['kills_per_min'] = df.apply(self._fix_kills_per_min, axis=1)
         df['actions_per_min'] = pd.to_numeric(df['actions_per_min'], errors='coerce')
+        df['total_xp'] = pd.to_numeric(df['total_xp'], errors='coerce')
         df = self._remove_invalid_matches(df)
         df = df[df['game_mode'] == 2]
 
-        return df 
-
-    def _drop_unnecessary_columns(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Удаление ненужных столбцов.
-
-        Args:
-            df (pd.DataFrame): DataFrame, из которого нужно удалить столбцы.
-
-        Returns:
-            pd.DataFrame: DataFrame после удаления ненужных столбцов.
-        """
-        cols_to_drop = ['pings', 'throw', 'loss', 'comeback', 'rank_tier', 'moonshard', 'aghanims_scepter']
-        return df.drop(cols_to_drop, axis=1)
+        return df
 
     def _remove_invalid_rows(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -69,22 +55,35 @@ class DataCleaner:
         cols_to_fill_zero = [
             'hero_kills', 'courier_kills', 'observer_kills', 'rune_pickups',
             'teamfight_participation', 'camps_stacked', 'creeps_stacked',
-            'stuns', 'sentry_uses', 'roshan_kills', 'tower_kills'
+            'stuns', 'sentry_uses', 'roshan_kills', 'tower_kills', 'kills_per_min'
         ]
+
         df[cols_to_fill_zero] = df[cols_to_fill_zero].fillna(0)
         return df
 
-    def _fix_kills_per_min(self, row: pd.Series) -> float:
-        """
-        Заполнение NaN в 'kills_per_min' на 0, если 'kills' равен 0.
 
-        Args:
-            row (pd.Series): Строка DataFrame для обработки.
-
-        Returns:
-            float: Исправленное значение для 'kills_per_min'.
+    def _get_invalid_match_ids(self, df: pd.DataFrame, column: str) -> Iterable:
         """
-        return 0 if pd.isna(row['kills_per_min']) and row['kills'] == 0 else row['kills_per_min']
+        Получение match_id с невалидными значениями по переменной (в командах Radiant или Dire более 2 игроков с invalid значениями).
+        """
+        mask_invalid = df[column].isna() | (df[column] == 0)
+
+        radiant_players = df[df['player_slot'] < 5]
+        dire_players = df[df['player_slot'] >= 128]
+
+        # Подсчет числа невалидных значений в Radiant и Dire для каждого 'match_id'
+        invalid_radiant_counts = radiant_players.groupby('match_id')[column].apply(
+            lambda x: (mask_invalid.loc[x.index]).sum()
+        )
+        invalid_dire_counts = dire_players.groupby('match_id')[column].apply(
+            lambda x: (mask_invalid.loc[x.index]).sum()
+        )
+
+        # Получаем match_id, где в Radiant или Dire >= 2 игроков с invalid значениями
+        invalid_match_ids_radiant = invalid_radiant_counts[invalid_radiant_counts >= 2].index
+        invalid_match_ids_dire = invalid_dire_counts[invalid_dire_counts >= 2].index
+
+        return invalid_match_ids_radiant.union(invalid_match_ids_dire)        
 
     def _remove_invalid_matches(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -96,21 +95,12 @@ class DataCleaner:
         Returns:
             pd.DataFrame: DataFrame с удаленными некорректными матчами.
         """
-        mask_invalid = df['actions_per_min'].isna() | (df['actions_per_min'] == 0)
 
-        radiant_players = df[df['player_slot'] < 5]
-        dire_players = df[df['player_slot'] >= 128]
+        invalid_match_ids_actions = self._get_invalid_match_ids(df, 'actions_per_min')
+        invalid_match_ids_xp = self._get_invalid_match_ids(df, 'total_xp')
 
-        invalid_radiant_counts = radiant_players.groupby('match_id')['actions_per_min'].apply(
-            lambda x: (mask_invalid.loc[x.index]).sum()
-        )
-        invalid_dire_counts = dire_players.groupby('match_id')['actions_per_min'].apply(
-            lambda x: (mask_invalid.loc[x.index]).sum()
-        )
-
-        invalid_match_ids_radiant = invalid_radiant_counts[invalid_radiant_counts >= 2].index
-        invalid_match_ids_dire = invalid_dire_counts[invalid_dire_counts >= 2].index
-        invalid_match_ids = invalid_match_ids_radiant.union(invalid_match_ids_dire)
+        # Объединение всех некорректных 'match_id' для удаления
+        invalid_match_ids = invalid_match_ids_actions.union(invalid_match_ids_xp)
 
         df = df[~df['match_id'].isin(invalid_match_ids)]
         return df
