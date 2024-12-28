@@ -1,18 +1,23 @@
 from enum import Enum
-from pydantic import BaseModel, conlist
 from typing import Any, Dict, List
 
+from pydantic import BaseModel
+
+
 class ModelType(str, Enum):
-    CatBoost = "CatBoost"
-    RidgeClassifier = "RidgeClassifier"
-    
+    CAT_BOOST = "CatBoost"
+    RIDGE_CLASSIFIER = "RidgeClassifier"
+
+
 class Player(BaseModel):
     account_id: int
     hero_name: str
 
+
 class Prediction(str, Enum):
-    Radiant = "Radiant"
-    Dire = "Dire"
+    RADIANT = "Radiant"
+    DIRE = "Dire"
+
 
 Team = List[Player]
 ModelId = str
