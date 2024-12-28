@@ -79,25 +79,30 @@ def create_top_10_heroes_plot(df, top_10_heroes):
 
 
 # Распределение убийств по героям
-def create_selected_heroes_plot(filtered_df):
-    fig = px.histogram(filtered_df, x="hero_name", y="kills", color="hero_name",
-                       labels={"hero_name": "Имя героя", "kills": "Количество убийств"},
-                       height=600)
-    fig.update_layout(xaxis_title="Имя героя", yaxis_title="Количество убийств")
+def create_selected_heroes_plot(filtered_df, attribute):
+    fig = px.histogram(
+        filtered_df,
+        x="hero_name",
+        y=attribute,
+        color="hero_name",
+        labels={"hero_name": "Имя героя", attribute: attribute.capitalize()},
+        height=600
+    )
+    fig.update_layout(xaxis_title="Имя героя", yaxis_title=attribute.capitalize())
     return fig
 
 
 # Box-plot распределения убийств по выбранным героям
-def create_box_plot(filtered_df):
+def create_box_plot(filtered_df, attribute):
     fig2 = px.box(
         filtered_df,
         x="hero_name",
-        y="kills",
+        y=attribute,
         color="hero_name",
-        labels={"hero_name": "Имя героя", "kills": "Количество убийств"},
+        labels={"hero_name": "Имя героя", attribute: attribute.capitalize()},
         height=600
     )
-    fig2.update_layout(xaxis_title="Имя героя", yaxis_title="Количество убийств")
+    fig2.update_layout(xaxis_title="Имя героя", yaxis_title=attribute.capitalize())
     return fig2
 
 
