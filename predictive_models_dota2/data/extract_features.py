@@ -116,6 +116,20 @@ class DataCleaner:
         return df
 
 class DataPreprocessor:
+
+    PLAYER_STATS_COLUMNS = [
+        'previous_kills_avr', 'previous_hero_kills_avr', 'previous_courier_kills_avr',
+        'previous_observer_kills_avr', 'previous_kills_per_min_avr', 'previous_kda_avr',
+        'previous_denies_avr', 'previous_hero_healing_avr', 'previous_assists_avr',
+        'previous_hero_damage_avr', 'previous_deaths_avr', 'previous_gold_per_min_avr',
+        'previous_total_gold_avr', 'previous_gold_spent_avr', 'previous_level_avr',
+        'previous_rune_pickups_avr', 'previous_xp_per_min_avr', 'previous_total_xp_avr',
+        'previous_actions_per_min_avr', 'previous_net_worth_avr', 'previous_teamfight_participation_avr',
+        'previous_camps_stacked_avr', 'previous_creeps_stacked_avr', 'previous_stuns_avr',
+        'previous_sentry_uses_avr', 'previous_roshan_kills_avr', 'previous_tower_kills_avr',
+        'previous_win_avr', 'previous_duration_avr', 'previous_first_blood_time_avr'
+    ]
+
     def __init__(self):
         """
         Инициализация объекта класса DataPreprocessor.
@@ -193,6 +207,7 @@ class DataPreprocessor:
             - pd.DataFrame: Последняя статистика для каждого игрока.
             - pd.Series: Медианные значения для отсутствующих данных игроков.
         """
+        # Сохранение данных только за последний матч для каждого account_id (необходимо в дальнейшем для преобразование данных от пользователя)
         df_last_player_stats = self.df_train_aggregated.copy().drop_duplicates(subset='account_id', keep='last')
         df_last_player_stats['account_id'] = df_last_player_stats['account_id'].astype(float)
         numeric_columns = self.df_train_aggregated.select_dtypes(include=['number'])
@@ -210,25 +225,16 @@ class DataPreprocessor:
         pd.DataFrame: Статистические данные за последний матч для каждого игрока из df_test.
         """
         df_test_agg = df_test.copy()
-        player_columns = [
-            'previous_kills_avr', 'previous_hero_kills_avr', 'previous_courier_kills_avr',
-            'previous_observer_kills_avr', 'previous_kills_per_min_avr', 'previous_kda_avr',
-            'previous_denies_avr', 'previous_hero_healing_avr', 'previous_assists_avr',
-            'previous_hero_damage_avr', 'previous_deaths_avr', 'previous_gold_per_min_avr',
-            'previous_total_gold_avr', 'previous_gold_spent_avr', 'previous_level_avr',
-            'previous_rune_pickups_avr', 'previous_xp_per_min_avr', 'previous_total_xp_avr',
-            'previous_actions_per_min_avr', 'previous_net_worth_avr', 'previous_teamfight_participation_avr',
-            'previous_camps_stacked_avr', 'previous_creeps_stacked_avr', 'previous_stuns_avr',
-            'previous_sentry_uses_avr', 'previous_roshan_kills_avr', 'previous_tower_kills_avr',
-            'previous_win_avr', 'previous_duration_avr', 'previous_first_blood_time_avr'
-        ]
-        columns_to_keep = ['match_id', 'account_id', 'isRadiant', 'radiant_win'] + player_columns
+        columns_to_keep = ['match_id', 'account_id', 'isRadiant', 'radiant_win'] + self.PLAYER_STATS_COLUMNS
+        columns_to_stats = self.PLAYER_STATS_COLUMNS + ['account_id']
 
+        # Получаем последние статистические данные игроков и данные о недостающих значениях
         df_last_player_stats, missing_player_data = self.get_player_previous_last_stats()
 
-        df_test_agg = pd.merge(df_test_agg, df_last_player_stats, on='account_id', how='left')
-
-        for column in player_columns:
+        df_test_agg = pd.merge(df_test_agg, df_last_player_stats[columns_to_stats], on='account_id', how='left')
+        
+        # Заполнение пропусков значениями медиан из тренировочных данных
+        for column in self.PLAYER_STATS_COLUMNS:
             df_test_agg[column] = df_test_agg[column].fillna(missing_player_data[column])
 
         df_test_agg = df_test_agg[columns_to_keep]
@@ -254,8 +260,10 @@ class DataPreprocessor:
             'duration', 'first_blood_time'
         ]
 
-        for col in group_cols:
-            df_players_agg[f'previous_{col}_avr'] = df_players_agg.groupby(groupby_cols)[col].transform(lambda x: x.shift().expanding().mean())
+        # Расчет скользящего среднего по переменным для каждого account_id.
+        df_players_agg[[f'previous_{col}_avr' for col in group_cols]] = df_players_agg.groupby(groupby_cols)[group_cols].transform(
+            lambda x: x.shift().expanding().mean()
+        )
 
     def aggregate_team_stats(self, df_players_agg: pd.DataFrame) -> pd.DataFrame:
         """
@@ -267,25 +275,13 @@ class DataPreprocessor:
         Returns:
         pd.DataFrame: Данные с агрегированной статистикой для команды.
         """
-        stats = ['mean', 'max', 'min']
-        columns_to_aggregate = [
-            'previous_kills_avr', 'previous_hero_kills_avr', 'previous_courier_kills_avr',
-            'previous_observer_kills_avr', 'previous_kills_per_min_avr', 'previous_kda_avr',
-            'previous_denies_avr', 'previous_hero_healing_avr', 'previous_assists_avr',
-            'previous_hero_damage_avr', 'previous_deaths_avr', 'previous_gold_per_min_avr',
-            'previous_total_gold_avr', 'previous_gold_spent_avr', 'previous_level_avr',
-            'previous_rune_pickups_avr', 'previous_xp_per_min_avr', 'previous_total_xp_avr',
-            'previous_actions_per_min_avr', 'previous_net_worth_avr', 'previous_teamfight_participation_avr',
-            'previous_camps_stacked_avr', 'previous_creeps_stacked_avr', 'previous_stuns_avr',
-            'previous_sentry_uses_avr', 'previous_roshan_kills_avr', 'previous_tower_kills_avr',
-            'previous_win_avr', 'previous_duration_avr', 'previous_first_blood_time_avr'
-        ]
+        aggregate_functions = ['mean', 'max', 'min']
 
         radiant_df = df_players_agg[df_players_agg['isRadiant'] == 1]
         dire_df = df_players_agg[df_players_agg['isRadiant'] == 0]
 
-        radiant_stats = self._calculate_team_stats(radiant_df, 'team_1', columns_to_aggregate, stats)
-        dire_stats = self._calculate_team_stats(dire_df, 'team_2', columns_to_aggregate, stats)
+        radiant_stats = self._calculate_team_stats(radiant_df, 'team_1', self.PLAYER_STATS_COLUMNS, aggregate_functions)
+        dire_stats = self._calculate_team_stats(dire_df, 'team_2', self.PLAYER_STATS_COLUMNS, aggregate_functions)
 
         df_team = pd.merge(radiant_stats, dire_stats, on='match_id')
         radiant_win = df_players_agg[['radiant_win', 'match_id']].groupby('match_id').mean().reset_index()
@@ -293,7 +289,7 @@ class DataPreprocessor:
 
         return df_team
 
-    def _calculate_team_stats(self, team_df: pd.DataFrame, team_name: str, columns_to_aggregate: list[str], stats: list[str]) -> pd.DataFrame:
+    def _calculate_team_stats(self, team_df: pd.DataFrame, team_name: str, columns_to_aggregate: list[str], aggregate_functions: list[str]) -> pd.DataFrame:
         """
         Расчет командной статистики, основанной на данных игроков.
 
@@ -301,20 +297,20 @@ class DataPreprocessor:
         team_df (pd.DataFrame): Данные команды (Radiant или Dire), для которой необходимо выполнить агрегацию.
         team_name (str): Название команды (например, 'team_1' или 'team_2').
         columns_to_aggregate (list[str]): Список колонок, которые необходимо агрегировать.
-        stats (list[str]): Список статистических показателей для агрегации (например, 'mean', 'max', 'min').
+        aggregate_functions (list[str]): Список статистических показателей для агрегации (например, 'mean', 'max', 'min').
 
         Returns:
         pd.DataFrame: Статистические показатели команды.
         """
-        aggregation_dict = {col: stats for col in columns_to_aggregate}
+        aggregation_dict = {col: aggregate_functions for col in columns_to_aggregate}
+        
         aggregated = team_df.groupby('match_id').agg(aggregation_dict)
 
-        new_columns = []
-        for col in aggregated.columns:
-            col_name, stat = col
-            new_columns.append(f'{col_name}_{team_name}_{stat}')
-
-        aggregated.columns = new_columns
+        # Переименование столбцов '<имя_колонки>_<название_команды>_<агрегированная_функция>'         
+        aggregated.columns = [
+            f'{col}_{team_name}_{agg_func}' for col, agg_func in aggregated.columns.to_flat_index()
+        ]
+        
         return aggregated
 
 @dataclass
