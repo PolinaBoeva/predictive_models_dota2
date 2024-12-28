@@ -20,10 +20,10 @@ def run_eda_streamlit():
     if upload_file is not None:
 
         df = pd.read_csv(upload_file)
-        df['match_id'] = df['match_id'].astype('object')
-        df['account_id'] = df['account_id'].astype('object')
+        #df['match_id'] = df['match_id'].astype('object')
+        #df['account_id'] = df['account_id'].astype('object')
 
-        """Основная информация о датасете"""
+        # Основная информация о датасете
         def display_dataset_info(df):
             st.write("### Основная информация о данных")
             with st.expander("### Посмотреть основную информацию"):
@@ -40,7 +40,7 @@ def run_eda_streamlit():
                 st.write("Категориальные значения:")
                 st.table(df.describe(include='object'))
 
-        """Статистика по выбранному игроку"""
+        # Статистика по выбранному игроку
         def display_selected_player_info(df):
             st.write("### Статистика по выбранному игроку")
             with st.expander("### Посмотреть статистику по игроку"):
@@ -74,48 +74,58 @@ def run_eda_streamlit():
                     })
                     st.write(hero_stats.T)
 
-                st.write("#### Количество убийств по матчам")
-                kills_table = player_data[['match_id', 'kills']].reset_index(drop=True)
-                st.dataframe(kills_table)
+                st.write("#### Гистограммы распределения значений признаков по матчам")
+                columns_to_plot = {
+                    'Количество убийств': 'kills',
+                    'Количество смертей': 'deaths',
+                    'Количество ассистов': 'assists',
+                    'Золото в минуту': 'gold_per_min',
+                    'Опыт в минуту': 'xp_per_min'
+                }
 
-                st.write("#### Количество смертей по матчам")
-                deaths_table = player_data[['match_id', 'deaths']].reset_index(drop=True)
-                st.dataframe(deaths_table)
+                selected_metric = st.selectbox("Выберите метрику для отображения", options=list(columns_to_plot.keys()))
+                selected_column = columns_to_plot[selected_metric]
 
-                st.write("#### Количество ассистов по матчам")
-                assists_table = player_data[['match_id', 'assists']].reset_index(drop=True)
-                st.dataframe(assists_table)
+                sorted_data = player_data.sort_values(by='match_id')
 
-                st.write("#### Золото в минуту по матчам")
-                gold_per_min_table = player_data[['match_id', 'gold_per_min']].reset_index(drop=True)
-                st.dataframe(gold_per_min_table)
+                fig12 = px.histogram(
+                    sorted_data,
+                    x='match_id',
+                    y=selected_column,
+                    labels={
+                        'match_id': 'Номер матча',
+                        selected_column: selected_metric
+                    },
+                    nbins=len(player_data['match_id'].unique()),
+                )
 
-                st.write("#### Опыт в минуту по матчам")
-                xp_per_min_table = player_data[['match_id', 'xp_per_min']].reset_index(drop=True)
-                st.dataframe(xp_per_min_table)
+                fig12.update_layout(
+                    bargap=0,
+                    xaxis_title='Номер матча',
+                    yaxis_title=selected_metric
+                )
+                st.plotly_chart(fig12)
 
-                st.write("#### Итоговый результат матчей")
+
+
+                st.write("#### Распределение исходов матчей для данного игрока")
                 result_table = pd.DataFrame({
                     'Результат': ['Победы', 'Поражения'],
                     'Количество': [player_data['win'].sum(), len(player_data) - player_data['win'].sum()]
                 })
-                st.dataframe(result_table.reset_index(drop=True))
 
-                labels = result_table['Результат']
-                sizes = result_table['Количество']
-                fig = px.pie(result_table, names='Результат', values='Количество',
+                fig13 = px.pie(result_table, names='Результат', values='Количество',
                              color_discrete_sequence=['#FFB6C1', '#A3D9FF'],
-                             title='Распределение исходов матчей для данного игрока',
                              hole=0)
-                st.plotly_chart(fig)
+                st.plotly_chart(fig13)
 
-        """Статистика по выбранному матчу"""
+        # Статистика по выбранному матчу
         def display_selected_player_match(df):
             st.write("### Статистика по выбранному матчу")
             with st.expander("### Посмотреть статистику по матчу"):
-                max_players_match_id = str(df['match_id'].value_counts().idxmax())  # Преобразуем в строку
+                max_players_match_id = str(df['match_id'].value_counts().idxmax())
                 match_ids = [str(match_id) for match_id in
-                             df['match_id'].unique()]  # Преобразуем все match_ids в строки
+                             df['match_id'].unique()]
 
                 selected_match_id = st.selectbox(
                     "Пожалуйста, выберите match_id, по которому хотите посмотреть статистику:",
@@ -165,7 +175,7 @@ def run_eda_streamlit():
                                     labels={'account_id': 'ID игрока', 'deaths': 'Смерти', 'hero_name': 'Имя героя'})
                 st.plotly_chart(fig_deaths)
 
-        """Построение графиков по историческим данным"""
+        # Построение графиков по историческим данным
         def display_graphics(df):
             st.write("### Общая аналитика исторических данных")
             with st.expander("### Посмотреть информацию"):
