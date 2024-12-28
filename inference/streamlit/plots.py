@@ -74,7 +74,7 @@ def create_top_10_heroes_plot(df, top_10_heroes):
     df_top_10 = df_top_10.sort_values(by='count', ascending=False)
 
     fig = px.bar(df_top_10, x='hero_name', y='count', color='hero_name',
-                 labels={'hero_name': 'Имя героя', 'count': 'Количество'})
+                 labels={'hero_name': 'Имя героя', 'count': 'Число вхождений'})
     return fig
 
 
