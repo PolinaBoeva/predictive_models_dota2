@@ -1,4 +1,4 @@
 # EDA в Streamlit
-**Ссылка**: https://predictivemodelsdota2-s5mdzjfqken55orn4hydn6.streamlit.app/  
+**Ссылка**: [Исторические данные (датасет для теста Streamlit)](https://drive.google.com/file/d/18G5kaS8QB4aNjPZ0u7zCATUsf5Ug5hy-/view)
 **Данные для теста**: https://disk.yandex.ru/d/k74N8zatrN62xQ
 
