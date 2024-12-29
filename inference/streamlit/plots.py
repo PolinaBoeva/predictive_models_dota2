@@ -1,9 +1,5 @@
 import pandas as pd
 import plotly.express as px
-import seaborn as sns
-import matplotlib.pyplot as plt
-import numpy as np
-
 
 # Гистограммы распределения значений признаков по матчам
 def plot_metric_histogram(data, columns_to_plot, selected_metric):
@@ -91,7 +87,6 @@ def create_box_plot(filtered_df, attribute):
     return fig
 
 
-
 # Победы команд Radiant vs Dire
 def create_winrate_pie_chart(df):
     df['winrate'] = df['win'].mean()
@@ -105,23 +100,22 @@ def create_winrate_pie_chart(df):
     fig = px.pie(win_data, names='Команда', values='Победы')
     return fig
 
-# Зависимость длительности матча на результат
-def create_duration_histogram(df):
+# Зависимость выбранной переменной на результат матча
+def create_histogram_for_variable(df, variable):
     mapping = {0: 'Поражение', 1: 'Победа'}
     df['win'] = df['win'].replace(mapping)
 
     fig = px.histogram(
         df,
-        x='duration',
+        x=variable,
         color='win',
         nbins=50,
-        labels={'duration': 'Длительность матча', 'win': 'Результат'},
+        labels={variable: variable.capitalize(), 'win': 'Результат'},
         barmode='overlay',
         color_discrete_map={'Поражение': 'lightcoral', 'Победа': 'lightblue'},
         category_orders={'win': ['Поражение', 'Победа']}
     )
-
-    fig.update_xaxes(title_text='Длительность матча')
+    fig.update_xaxes(title_text=variable.capitalize())
     fig.update_yaxes(title_text='Количество матчей')
     return fig
 
