@@ -1,0 +1,433 @@
+openapi: 3.0.0
+info:
+    title: Predictive Models Dota2 API
+    version: "1.0"
+    description: >
+        API для обучения моделей предсказания исхода игр (Radiant/Dire).
+servers:
+    - url: http://localhost:8000
+paths:
+    /:
+        get:
+            summary: Root
+            operationId: root__get
+            description: Информация о статусе сервиса.
+            responses:
+                "200":
+                    description: Successful Response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ServiceStatusResponse"
+
+    /api/v1/models/fit:
+        post:
+            summary: Запуск асинхронного обучения модели
+            operationId: fitModel
+            tags:
+                - models
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/FitRequest"
+            responses:
+                "202":
+                    description: Задача обучения модели принят
+
+    /api/v1/models/fit/status:
+        get:
+            summary: Получение статуса асинхронной задачи обучения
+            operationId: getFitStatus
+            tags:
+                - models
+            parameters:
+                - in: query
+                  name: model_id
+                  required: true
+                  schema:
+                      $ref: "#/components/schemas/ModelId"
+                  description: "Уникальный идентификатор задачи обучения"
+            responses:
+                "200":
+                    description: Текущий статус задачи
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/FitStatusResponse"
+
+    /api/v1/models/list:
+        get:
+            summary: Список всех обученных моделей
+            operationId: getModelsList
+            tags:
+                - models
+            responses:
+                "200":
+                    description: Список обученных моделей
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ModelsListResponse"
+
+    /api/v1/models/activate:
+        put:
+            summary: Установка активной модели для прогноза
+            operationId: activateModel
+            tags:
+                - models
+            parameters:
+                - in: query
+                  name: model_id
+                  required: true
+                  schema:
+                      $ref: "#/components/schemas/ModelId"
+                  description: "Идентификатор модели"
+            responses:
+                "200":
+                    description: Успешная установка активной модели
+
+    /api/v1/models/predict:
+        post:
+            summary: Прогноз исхода на основе выбора героев
+            operationId: singlePredict
+            tags:
+                - models
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/SinglePredictRequest"
+            responses:
+                "200":
+                    description: Результаты прогноза
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/SinglePredictResponse"
+
+    /api/v1/models/predict_csv:
+        post:
+            summary: Прогноз исхода по загруженному CSV
+            operationId: predictCsv
+            tags:
+                - models
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            $ref: "#/components/schemas/CSVPredictRequest"
+            responses:
+                "200":
+                    description: Результат прогноза для каждой строки CSV
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/PredictCsvResponse"
+
+    /api/v1/models/model_info:
+        get:
+            summary: Получить информацию о модели
+            operationId: getModelInfo
+            tags:
+                - models
+            parameters:
+                - in: query
+                  name: model_id
+                  required: true
+                  schema:
+                      $ref: "#/components/schemas/ModelId"
+                  description: "Идентификатор модели"
+            responses:
+                "200":
+                    description: Подробные данные о модели
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ModelInfoResponse"
+
+    /api/v1/data/account_ids:
+        get:
+            summary: Получить список всех account_id игроков
+            operationId: getAccountIdsList
+            tags:
+                - data
+            responses:
+                "200":
+                    description: Список всех account_id игроков
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/AccountIdsResponse"
+
+components:
+    schemas:
+        FitStatus:
+            type: string
+            enum:
+                - "RUNNING"
+                - "SUCCESS"
+                - "FAILED"
+            example: "SUCCESS"
+
+        ModelId:
+            type: string
+            example: "model_x"
+
+        ModelType:
+            type: string
+            enum:
+                - "CatBoost"
+                - "RidgeClassifier"
+            example: "CatBoost"
+
+        Hyperparameters:
+            type: object
+            additionalProperties:
+                type: object
+            example:
+                learning_rate: 0.1
+                depth: 6
+
+        Prediction:
+            type: string
+            enum:
+                - "Radiant"
+                - "Dire"
+            example: "Radiant"
+
+        PredictionProba:
+            type: number
+            format: float
+            minimum: 0
+            maximum: 1
+            example: 0.75
+
+        AccountId:
+            type: integer
+            example: 123456
+
+        Player:
+            type: object
+            properties:
+                account_id:
+                    $ref: "#/components/schemas/AccountId"
+                hero_name:
+                    type: string
+                    example: "Invoker"
+            required:
+                - account_id
+
+        Team:
+            type: array
+            items:
+                $ref: "#/components/schemas/Player"
+            minItems: 5
+            maxItems: 5
+
+        CSVFile:
+            type: string
+            format: binary
+
+        FeatureImportances:
+            type: array
+            items:
+                type: object
+                properties:
+                    feature:
+                        type: string
+                        example: "hero_id"
+                    importance:
+                        type: number
+                        format: float
+                        example: 0.12
+                required:
+                    - feature
+                    - importance
+
+        FitTime:
+            type: number
+            format: float
+            example: 12.34
+            minimum: 0
+
+        ModelInfo:
+            type: object
+            additionalProperties: false
+            properties:
+                model_id:
+                    $ref: "#/components/schemas/ModelId"
+                model_type:
+                    $ref: "#/components/schemas/ModelType"
+                feature_importances:
+                    $ref: "#/components/schemas/FeatureImportances"
+                fit_time:
+                    type: number
+                    format: float
+                    example: 12.34
+                metrics:
+                    type: object
+                    additionalProperties:
+                        type: number
+                    example:
+                        accuracy: 0.95
+                        roc_auc: 0.93
+            required:
+                - model_id
+                - model_type
+                - fit_time
+
+        SinglePredictResult:
+            type: object
+            properties:
+                model_id:
+                    $ref: "#/components/schemas/ModelId"
+                prediction:
+                    $ref: "#/components/schemas/Prediction"
+                prediction_proba:
+                    $ref: "#/components/schemas/PredictionProba"
+            required:
+                - model_id
+                - prediction
+                - prediction_proba
+
+        PredictCsvResult:
+            type: object
+            additionalProperties: false
+            properties:
+                model_id:
+                    $ref: "#/components/schemas/ModelId"
+                predictions:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/Prediction"
+                    description: "Список предсказаний для каждой строки"
+                    example:
+                        - "Radiant"
+                        - "Dire"
+                        - "Radiant"
+                prediction_probas:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/PredictionProba"
+                    description: "Список вероятностей победы Radiant"
+                    example:
+                        - 0.75
+                        - 0.45
+                        - 0.80
+            required:
+                - model_id
+                - predictions
+                - prediction_probas
+
+        FitRequest:
+            type: object
+            additionalProperties: false
+            properties:
+                model_id:
+                    $ref: "#/components/schemas/ModelId"
+                model_type:
+                    $ref: "#/components/schemas/ModelType"
+                hyperparameters:
+                    $ref: "#/components/schemas/Hyperparameters"
+            required:
+                - model_id
+                - model_type
+                - hyperparameters
+
+        SinglePredictRequest:
+            type: object
+            properties:
+                radiant:
+                    description: "Состав команды Radiant"
+                    $ref: "#/components/schemas/Team"
+                dire:
+                    description: "Состав команды Dire"
+                    $ref: "#/components/schemas/Team"
+            required:
+                - radiant
+                - dire
+
+        CSVPredictRequest:
+            type: object
+            properties:
+                file:
+                    description: "CSV файл с данными для прогноза"
+                    $ref: "#/components/schemas/CSVFile"
+            required:
+                - file
+
+        SinglePredictResponse:
+            type: object
+            properties:
+                prediction:
+                    $ref: "#/components/schemas/SinglePredictResult"
+
+        PredictCsvResponse:
+            type: object
+            properties:
+                predictions:
+                    $ref: "#/components/schemas/PredictCsvResult"
+
+        FitStatusResponse:
+            type: object
+            additionalProperties: false
+            properties:
+                status:
+                    $ref: "#/components/schemas/FitStatus"
+                error:
+                    type: string
+                    nullable: true
+                    example: "Some error message"
+            required:
+                - status
+
+        ModelsListResponse:
+            type: object
+            additionalProperties: false
+            properties:
+                models:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/ModelId"
+                    example:
+                        - "model_x"
+                        - "model_y"
+            required:
+                - models
+
+        ModelInfoResponse:
+            type: object
+            additionalProperties: false
+            properties:
+                model_info:
+                    $ref: "#/components/schemas/ModelInfo"
+            required:
+                - model_info
+
+        AccountIdsResponse:
+            type: object
+            additionalProperties: false
+            properties:
+                account_ids:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/AccountId"
+                    example:
+                        - 123456
+                        - 654321
+            required:
+                - account_ids
+
+        ServiceStatusResponse:
+            type: object
+            additionalProperties: false
+            properties:
+                status:
+                    type: string
+                    example: "App healthy"
+            required:
+                - status
