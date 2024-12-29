@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 
 from utils import get_top_10_heroes
-from plots import plot_metric_histogram, create_result_pie_chart, create_kills_bar_chart, create_deaths_plot,\
-    create_top_10_heroes_plot, create_selected_heroes_plot, create_box_plot, create_winrate_pie_chart,\
-    create_duration_histogram, create_kda_scatter_plot
+from plots import plot_metric_histogram, create_result_pie_chart, create_hero_name_distribution_plot,\
+    create_distribution_plot, create_top_10_heroes_plot, create_selected_heroes_plot, create_box_plot,\
+    create_winrate_pie_chart, create_duration_histogram, create_kda_scatter_plot
 
 # Основная информация о датасете
 def display_dataset_info(df):
@@ -111,13 +111,22 @@ def display_selected_player_match(df):
         detailed_stats = df_players.groupby('account_id')[stats_to_show].mean().reset_index()
         st.write(detailed_stats)
 
-        st.write("#### Количество убийств по игрокам (в разрезе героев):")
-        fig = create_kills_bar_chart(df_players)
-        st.plotly_chart(fig)
+        st.write("#### Поробная статистика по игроку из матча:")
+        account_id = st.selectbox("Выберите account_id игрока:", players_info['account_id'])
+        df_player = df_players[df_players['account_id'] == account_id]
 
-        st.write("#### Смерти по игрокам (в разрезе героев):")
-        fig = create_deaths_plot(df_players)
-        st.plotly_chart(fig)
+        variable = st.selectbox("Выберите переменную для графика:",
+                                ['hero_name', 'win', 'kills', 'deaths', 'assists',
+                                 'hero_damage', 'hero_healing', 'gold_per_min',
+                                 'net_worth', 'xp_per_min'])
+
+        if variable == 'hero_name':
+            fig = create_hero_name_distribution_plot(df_player)
+            st.plotly_chart(fig)
+
+        else:
+            fig = create_distribution_plot(df_player, variable)
+            st.plotly_chart(fig)
 
 # Построение графиков по историческим данным
 def display_graphics(df):
