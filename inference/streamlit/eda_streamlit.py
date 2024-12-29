@@ -2,9 +2,15 @@ import streamlit as st
 import pandas as pd
 
 from utils import get_top_10_heroes
-from plots import plot_metric_histogram, create_result_pie_chart, create_hero_name_distribution_plot,\
-    create_distribution_plot, create_top_10_heroes_plot, create_selected_heroes_plot, create_box_plot,\
-    create_winrate_pie_chart, create_histogram_for_variable, create_kda_scatter_plot
+from plots import (plot_metric_histogram,
+                   create_result_pie_chart,
+                   create_distribution_plot,
+                   create_top_10_heroes_plot,
+                   create_selected_heroes_plot,
+                   create_box_plot,
+                   create_winrate_pie_chart,
+                   create_histogram_for_variable,
+                   create_kda_scatter_plot)
 
 # Основная информация о датасете
 def display_dataset_info(df):
@@ -120,13 +126,8 @@ def display_selected_player_match(df):
                                  'hero_damage', 'hero_healing', 'gold_per_min',
                                  'net_worth', 'xp_per_min'])
 
-        if variable == 'hero_name':
-            fig = create_hero_name_distribution_plot(df_player)
-            st.plotly_chart(fig)
-
-        else:
-            fig = create_distribution_plot(df_player, variable)
-            st.plotly_chart(fig)
+        fig = create_distribution_plot(df_player, variable)
+        st.plotly_chart(fig)
 
 # Построение графиков по историческим данным
 def display_graphics(df):
