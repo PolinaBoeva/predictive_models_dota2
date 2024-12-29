@@ -55,3 +55,4 @@ def predict_model(models_api_client, data_api_client):
             st.json(prediction_csv_response)
         except Exception as e:
             st.error(f"Ошибка при отправке тестового файла: {str(e)}.")
+
