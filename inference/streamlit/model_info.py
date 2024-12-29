@@ -29,3 +29,4 @@ def display_model_info(api_client):
             st.success("Модель успешно активирована!")
         else:
             st.error("Не удалось активировать модель.")
+
