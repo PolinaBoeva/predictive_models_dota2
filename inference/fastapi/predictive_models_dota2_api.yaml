@@ -7,10 +7,25 @@ info:
 servers:
     - url: http://localhost:8000
 paths:
+    /:
+        get:
+            summary: Root
+            operationId: root__get
+            description: Информация о статусе сервиса.
+            responses:
+                "200":
+                    description: Successful Response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ServiceStatusResponse"
+
     /api/v1/models/fit:
         post:
             summary: Запуск асинхронного обучения модели
             operationId: fitModel
+            tags:
+                - models
             requestBody:
                 required: true
                 content:
@@ -29,6 +44,8 @@ paths:
         get:
             summary: Получение статуса асинхронной задачи обучения
             operationId: getFitStatus
+            tags:
+                - models
             parameters:
                 - in: query
                   name: task_id
@@ -48,6 +65,8 @@ paths:
         get:
             summary: Список всех обученных моделей
             operationId: getModelsList
+            tags:
+                - models
             responses:
                 "200":
                     description: Список обученных моделей
@@ -60,6 +79,8 @@ paths:
         put:
             summary: Установка активной модели для прогноза
             operationId: activateModel
+            tags:
+                - models
             parameters:
                 - in: query
                   name: model_id
@@ -74,7 +95,9 @@ paths:
     /api/v1/models/predict:
         post:
             summary: Прогноз исхода на основе выбора героев
-            operationId: predict
+            operationId: singlePredict
+            tags:
+                - models
             requestBody:
                 required: true
                 content:
@@ -93,6 +116,8 @@ paths:
         post:
             summary: Прогноз исхода по загруженному CSV
             operationId: predictCsv
+            tags:
+                - models
             requestBody:
                 required: true
                 content:
@@ -111,6 +136,8 @@ paths:
         get:
             summary: Получить информацию о модели
             operationId: getModelInfo
+            tags:
+                - models
             parameters:
                 - in: query
                   name: model_id
@@ -126,11 +153,33 @@ paths:
                             schema:
                                 $ref: "#/components/schemas/ModelInfoResponse"
 
+    /api/v1/data/account_ids:
+        get:
+            summary: Получить список всех account_id игроков
+            operationId: getAccountIdsList
+            tags:
+                - data
+            responses:
+                "200":
+                    description: Список всех account_id игроков
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/AccountIdsResponse"
+
 components:
     schemas:
         TaskId:
             type: string
             example: "task_x"
+
+        TaskStatus:
+            type: string
+            enum:
+                - "RUNNING"
+                - "SUCCESS"
+                - "FAILED"
+            example: "SUCCESS"
 
         ModelId:
             type: string
@@ -165,15 +214,20 @@ components:
             maximum: 1
             example: 0.75
 
+        AccountId:
+            type: integer
+            example: 123456
+
         Player:
             type: object
             properties:
                 account_id:
-                    type: integer
-                    example: 123456
+                    $ref: "#/components/schemas/AccountId"
                 hero_name:
                     type: string
                     example: "Invoker"
+            required:
+                - account_id
 
         Team:
             type: array
@@ -198,12 +252,30 @@ components:
                         type: number
                         format: float
                         example: 0.12
+                required:
+                    - feature
+                    - importance
 
         FitTime:
             type: number
             format: float
             example: 12.34
             minimum: 0
+
+        FitRequest:
+            type: object
+            additionalProperties: false
+            properties:
+                model_id:
+                    $ref: "#/components/schemas/ModelId"
+                model_type:
+                    $ref: "#/components/schemas/ModelType"
+                hyperparameters:
+                    $ref: "#/components/schemas/Hyperparameters"
+            required:
+                - model_id
+                - model_type
+                - hyperparameters
 
         SinglePredictRequest:
             type: object
@@ -270,21 +342,6 @@ components:
                 - predictions
                 - prediction_probas
 
-        FitRequest:
-            type: object
-            additionalProperties: false
-            properties:
-                model_id:
-                    $ref: "#/components/schemas/ModelId"
-                model_type:
-                    $ref: "#/components/schemas/ModelType"
-                hyperparameters:
-                    $ref: "#/components/schemas/Hyperparameters"
-            required:
-                - model_id
-                - model_type
-                - hyperparameters
-
         FitResponse:
             type: object
             additionalProperties: false
@@ -299,16 +356,13 @@ components:
             additionalProperties: false
             properties:
                 status:
-                    type: string
-                    enum:
-                        - "RUNNING"
-                        - "SUCCESS"
-                        - "FAILURE"
-                    example: "SUCCESS"
+                    $ref: "#/components/schemas/TaskStatus"
                 error:
                     type: string
                     nullable: true
                     example: "Some error message"
+            required:
+                - status
 
         ModelsListResponse:
             type: object
@@ -321,6 +375,8 @@ components:
                     example:
                         - "model_x"
                         - "model_y"
+            required:
+                - models
 
         ModelInfoResponse:
             type: object
@@ -343,3 +399,31 @@ components:
                     example:
                         accuracy: 0.95
                         roc_auc: 0.93
+            required:
+                - model_id
+                - model_type
+                - fit_time
+
+        AccountIdsResponse:
+            type: object
+            additionalProperties: false
+            properties:
+                account_ids:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/AccountId"
+                    example:
+                        - 123456
+                        - 654321
+            required:
+                - account_ids
+
+        ServiceStatusResponse:
+            type: object
+            additionalProperties: false
+            properties:
+                status:
+                    type: string
+                    example: "App healthy"
+            required:
+                - status

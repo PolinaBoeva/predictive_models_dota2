@@ -1,4 +1,4 @@
-from models.requests import SinglePredictRequest, CSVPredictRequest, FitRequest
+from models.requests import SinglePredictRequest, PredictCsvRequest, FitRequest
 
 
 class ModelsClient:
@@ -6,7 +6,7 @@ class ModelsClient:
     def predict_single(self, request: SinglePredictRequest):
         pass
 
-    def predict_csv(self, request: CSVPredictRequest):
+    def predict_csv(self, request: PredictCsvRequest):
         pass
 
     def fit_model(self, request: FitRequest):

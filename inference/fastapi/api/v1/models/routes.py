@@ -1,43 +1,104 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from typing import List
-from models.requests import SinglePredictRequest, CSVPredictRequest, FitRequest
-from models.responses import PredictResponse, PredictCsvResponse, FitResponse, ModelInfoResponse
+from typing import Annotated
+
+from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Body
+
+from models.base import FitStatus, TaskId, ModelId
+from models.requests import SinglePredictRequest, PredictCsvRequest, FitRequest
+from models.responses import (
+    ModelsListResponse,
+    SinglePredictResponse,
+    PredictCsvResponse,
+    FitResponse,
+    ModelInfoResponse,
+    FitStatusResponse,
+)
 from clients.models import ModelsClient
 
 router = APIRouter()
 models_service = ModelsClient()
 
-@router.post("/predict", response_model=PredictResponse, summary="Прогноз исхода на основе выбора героев")
-def predict(request: SinglePredictRequest):
+
+@router.post(
+    "/fit",
+    response_model=FitResponse,
+    summary="Запуск асинхронного обучения модели",
+    status_code=202,
+)
+async def post_fit(request: Annotated[FitRequest, Body()]):
     try:
-        prediction, probability = models_service.predict_single(request)
-        return PredictResponse(prediction=prediction, prediction_proba=probability)
-    except Exception as e:
+        task_id = models_service.fit_model(request)
+        return FitResponse(task_id=task_id)
+    except Exception as e:  # TODO: уточнить тип ошибки
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/predict_csv", response_model=PredictCsvResponse, summary="Прогноз исхода по загруженному CSV")
-def predict_csv(file: UploadFile = File(...)):
+
+@router.get(
+    "/fit/status",
+    response_model=FitStatusResponse,
+    summary="Получение статуса асинхронной задачи обучения",
+)
+async def get_fit_status(task_id: Annotated[TaskId, Query(min_length=1)]):
     try:
-        csv_data = CSVPredictRequest(file=file.file.read())
-        predictions, probas = models_service.predict_csv(csv_data)
-        return PredictCsvResponse(
-            success=True,
-            predictions=predictions,
-            prediction_probas=probas
+        status = models_service.get_fit_status(task_id)
+        return FitStatusResponse(status=status)
+    except Exception as e:  # TODO: уточнить тип ошибки
+        return FitStatusResponse(status=FitStatus.FAILED, error=str(e))
+
+
+@router.get(
+    "/list",
+    response_model=ModelsListResponse,
+    summary="Список всех обученных моделей",
+)
+async def get_models_list():
+    models = models_service.get_models_list()
+    return ModelsListResponse(models=models)
+
+
+@router.put(
+    "/activate",
+    summary="Установка активной модели для прогноза",
+)
+async def activate_model(model_id: Annotated[ModelId, Query(min_length=1)]):
+    models_service.activate_model(request)
+
+
+@router.post(
+    "/predict",
+    response_model=SinglePredictResponse,
+    summary="Прогноз исхода на основе выбора героев",
+)
+def predict(request: Annotated[SinglePredictRequest, Body()]):
+    try:
+        model_id, prediction, probability = models_service.predict_single(request)
+        return SinglePredictResponse(
+            model_id=model_id, prediction=prediction, prediction_proba=probability
         )
-    except Exception as e:
+    except Exception as e:  # TODO: уточнить тип ошибки
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/fit", response_model=FitResponse, summary="Обучение модели")
-def fit_model(request: FitRequest):
+
+@router.post(
+    "/predict_csv",
+    response_model=PredictCsvResponse,
+    summary="Прогноз исхода на основе CSV-файла",
+)
+async def predict_csv(file: Annotated[UploadFile, File()]):
     try:
-        result_message = models_service.fit_model(request)
-        return FitResponse(success=True, message=result_message)
-    except Exception as e:
+        model_id, predictions, probabilities = models_service.predict_csv(file)
+        return PredictCsvResponse(
+            model_id=model_id, predictions=predictions, prediction_probas=probabilities
+        )
+    except Exception as e:  # TODO: уточнить тип ошибки
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/model_info", response_model=ModelInfoResponse, summary="Получить информацию о модели")
-def get_model_info(model_id: str):
+
+@router.get(
+    "/model_info",
+    response_model=ModelInfoResponse,
+    summary="Получение информации о модели",
+)
+async def get_model_info(model_id: Annotated[ModelId, Query(min_length=1)]):
     try:
         model_info = models_service.get_model_info(model_id)
         return model_info

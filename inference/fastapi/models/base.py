@@ -11,7 +11,7 @@ class ModelType(str, Enum):
 
 class Player(BaseModel):
     account_id: int
-    hero_name: str
+    hero_name: str | None
 
 
 class Prediction(str, Enum):
@@ -19,6 +19,13 @@ class Prediction(str, Enum):
     DIRE = "Dire"
 
 
+class FitStatus(str, Enum):
+    SUCCESS = "Success"
+    FAILED = "Failed"
+    RUNNING = "Running"
+
+
+TaskId = str
 Team = List[Player]
 ModelId = str
 Hyperparameters = Dict[str, Any]
