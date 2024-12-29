@@ -182,7 +182,8 @@ def display_graphics(df):
             'deaths',
             'gold_per_min',
             'xp_per_min',
-            'level'
+            'level',
+            'duration'
         ]
         selected_variable = st.selectbox("Выберите переменную для анализа:", variables)
         st.write("Зависимость {} на результат".format(selected_variable))
