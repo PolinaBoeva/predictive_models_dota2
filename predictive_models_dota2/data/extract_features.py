@@ -134,7 +134,7 @@ class DataPreprocessor:
         self.df_train: Optional[pd.DataFrame] = None
         self.df_test_team: Optional[pd.DataFrame] = None
 
-    def fit(self, df_train: pd.DataFrame) -> None:
+    def fit(self, df_train: pd.DataFrame) -> DataPreprocessor:
         """
         Вычисление агрегированных статистик на тренировочных данных.
 
@@ -142,7 +142,7 @@ class DataPreprocessor:
         df_train (pd.DataFrame): Тренировочные данные, содержащие информацию о матчах и игроках.
 
         Returns:
-        None.
+        DataPreprocessor: Объект класса.
         """
         self.df_train = df_train.copy()
         df_players_agg = self.aggregate_player_previous_stats(self.df_train)
@@ -151,6 +151,8 @@ class DataPreprocessor:
         # Удаление матчей с NaN значениями (матчи, для которых не было предшествующих исторических данных).
         df_team = df_team.dropna(how='any')
         self.df_train_team = df_team
+        
+        return self
 
     def fit_transform(self, df_train: pd.DataFrame) -> pd.DataFrame:
         """
