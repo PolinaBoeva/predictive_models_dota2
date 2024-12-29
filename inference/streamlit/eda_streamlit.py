@@ -67,12 +67,12 @@ def display_selected_player_info(df):
             'Опыт в минуту': 'xp_per_min'
         }
         selected_metric = st.selectbox("Выберите метрику для отображения", options=list(columns_to_plot.keys()))
-        fig12 = plot_metric_histogram(player_data, columns_to_plot, selected_metric)
-        st.plotly_chart(fig12)
+        fig = plot_metric_histogram(player_data, columns_to_plot, selected_metric)
+        st.plotly_chart(fig)
 
         st.write("#### Распределение исходов матчей для данного игрока")
-        fig13 = create_result_pie_chart(player_data)
-        st.plotly_chart(fig13)
+        fig = create_result_pie_chart(player_data)
+        st.plotly_chart(fig)
 
 # Статистика по выбранному матчу
 def display_selected_player_match(df):
@@ -112,12 +112,12 @@ def display_selected_player_match(df):
         st.write(detailed_stats)
 
         st.write("#### Количество убийств по игрокам (в разрезе героев):")
-        fig_kills = create_kills_bar_chart(df_players)
-        st.plotly_chart(fig_kills)
+        fig = create_kills_bar_chart(df_players)
+        st.plotly_chart(fig)
 
         st.write("#### Смерти по игрокам (в разрезе героев):")
-        fig_deaths = create_deaths_plot(df_players)
-        st.plotly_chart(fig_deaths)
+        fig = create_deaths_plot(df_players)
+        st.plotly_chart(fig)
 
 # Построение графиков по историческим данным
 def display_graphics(df):
@@ -126,8 +126,8 @@ def display_graphics(df):
         top_10_heroes = get_top_10_heroes(df)
 
         st.write("#### Самые популярные герои")
-        fig10 = create_top_10_heroes_plot(df, top_10_heroes)
-        st.plotly_chart(fig10)
+        fig = create_top_10_heroes_plot(df, top_10_heroes)
+        st.plotly_chart(fig)
 
         st.write("#### Статистика по топ-10 популярным героям")
         df_top_10_stats = df[df['hero_name'].isin(top_10_heroes)]
@@ -155,17 +155,17 @@ def display_graphics(df):
             options=['kills', 'deaths', 'assists', 'hero_damage', 'hero_healing', 'gold_per_min', 'net_worth',
                      'xp_per_min'])
 
-        fig1 = create_selected_heroes_plot(filtered_df, attribute)
-        st.plotly_chart(fig1)
+        fig = create_selected_heroes_plot(filtered_df, attribute)
+        st.plotly_chart(fig)
 
         st.write("#### Box-plot распределения переменной по выбранным героям")
-        fig2 = create_box_plot(filtered_df, attribute)
-        st.plotly_chart(fig2)
+        fig = create_box_plot(filtered_df, attribute)
+        st.plotly_chart(fig)
 
 
         st.write("#### Победы команд Radiant vs Dire")
-        fig_pie = create_winrate_pie_chart(df)
-        st.plotly_chart(fig_pie)
+        fig = create_winrate_pie_chart(df)
+        st.plotly_chart(fig)
 
         st.write("#### Зависимость длительности матча на результат")
         fig = create_duration_histogram(df)
