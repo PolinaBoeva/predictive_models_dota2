@@ -33,11 +33,6 @@ def create_result_pie_chart(player_data):
     return fig
 
 
-# Персонажи, за которых играет выбранный игрок
-def create_hero_name_distribution_plot(df_player):
-    fig = px.histogram(df_player, x='hero_name', title='Частота выбора героев игроком')
-    return fig
-
 # Распределние переменной для выбраного игрока
 def create_distribution_plot(df_player, variable):
     if variable in df_player.columns:
