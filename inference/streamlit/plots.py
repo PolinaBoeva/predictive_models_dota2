@@ -37,33 +37,18 @@ def create_result_pie_chart(player_data):
     return fig
 
 
-# Количество убийств по игрокам (в разрезе героев)
-def create_kills_bar_chart(df_players):
-    fig = px.bar(
-        df_players,
-        x='account_id',
-        y='kills',
-        color='hero_name',
-        labels={'account_id': 'ID игрока', 'kills': 'Убийства', 'hero_name': 'Имя героя'}
-    )
-    fig.update_layout(
-        xaxis={'categoryorder': 'category ascending'},
-        bargap=0,
-        bargroupgap=0
-    )
+# Персонажи, за которых играет выбранный игрок
+def create_hero_name_distribution_plot(df_player):
+    fig = px.histogram(df_player, x='hero_name', title='Частота выбора героев игроком')
     return fig
 
-
-# Смерти по игрокам (в разрезе героев)
-def create_deaths_plot(df_players):
-    fig = px.bar(
-        df_players,
-        x='account_id',
-        y='deaths',
-        color='hero_name',
-        labels={'account_id': 'ID игрока', 'deaths': 'Смерти', 'hero_name': 'Имя героя'}
-    )
-    return fig
+# Распределние переменной для выбраного игрока
+def create_distribution_plot(df_player, variable):
+    if variable in df_player.columns:
+        fig = px.histogram(df_player, x=variable, title=f'Распределение {variable} по игроку')
+        return fig
+    else:
+        raise ValueError(f"Переменная {variable} не найдена в данных.")
 
 
 # топ-10 популярных героев
