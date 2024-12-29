@@ -34,11 +34,7 @@ paths:
                             $ref: "#/components/schemas/FitRequest"
             responses:
                 "202":
-                    description: Задача обучения модели принята
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/FitResponse"
+                    description: Задача обучения модели принят
 
     /api/v1/models/fit/status:
         get:
@@ -48,10 +44,10 @@ paths:
                 - models
             parameters:
                 - in: query
-                  name: task_id
+                  name: model_id
                   required: true
                   schema:
-                      $ref: "#/components/schemas/TaskId"
+                      $ref: "#/components/schemas/ModelId"
                   description: "Уникальный идентификатор задачи обучения"
             responses:
                 "200":
@@ -169,11 +165,7 @@ paths:
 
 components:
     schemas:
-        TaskId:
-            type: string
-            example: "task_x"
-
-        TaskStatus:
+        FitStatus:
             type: string
             enum:
                 - "RUNNING"
@@ -380,21 +372,12 @@ components:
                 predictions:
                     $ref: "#/components/schemas/PredictCsvResult"
 
-        FitResponse:
-            type: object
-            additionalProperties: false
-            properties:
-                task_id:
-                    $ref: "#/components/schemas/TaskId"
-            required:
-                - task_id
-
         FitStatusResponse:
             type: object
             additionalProperties: false
             properties:
                 status:
-                    $ref: "#/components/schemas/TaskStatus"
+                    $ref: "#/components/schemas/FitStatus"
                 error:
                     type: string
                     nullable: true

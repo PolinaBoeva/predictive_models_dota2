@@ -11,10 +11,6 @@ from models.base import (
 )
 
 
-class FitResponse(BaseModel):
-    task_id: str
-
-
 class FitStatusResponse(BaseModel):
     status: FitStatus
     error: str | None = None

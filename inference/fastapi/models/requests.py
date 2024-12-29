@@ -1,6 +1,6 @@
 from pydantic import Field, BaseModel
 
-from models.base import TaskId, Team, ModelId, ModelType, Hyperparameters
+from models.base import Team, ModelId, ModelType, Hyperparameters
 
 
 class FitRequest(BaseModel):
@@ -10,7 +10,7 @@ class FitRequest(BaseModel):
 
 
 class FitStatusRequest(BaseModel):
-    task_id: TaskId
+    modelId: ModelId = Field(alias="model_id")
 
 
 class ActivateModelRequest(BaseModel):

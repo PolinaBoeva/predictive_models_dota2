@@ -2,17 +2,17 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, HTTPException, Query, Body
 
-from models.base import FitStatus, TaskId, ModelId
+from models.base import ModelId
 from models.requests import SinglePredictRequest, PredictCsvRequest, FitRequest
 from models.responses import (
     ModelsListResponse,
     SinglePredictResponse,
     PredictCsvResponse,
-    FitResponse,
     ModelInfoResponse,
     FitStatusResponse,
 )
 from clients.models import ModelsClient
+
 
 router = APIRouter()
 models_service = ModelsClient()
@@ -20,16 +20,11 @@ models_service = ModelsClient()
 
 @router.post(
     "/fit",
-    response_model=FitResponse,
     summary="Запуск асинхронного обучения модели",
     status_code=202,
 )
 async def post_fit(request: Annotated[FitRequest, Body()]):
-    try:
-        task_id = models_service.fit_model(request)
-        return FitResponse(task_id=task_id)
-    except Exception as e:  # TODO: уточнить тип ошибки
-        raise HTTPException(status_code=400, detail=str(e))
+    models_service.fit_model(request)
 
 
 @router.get(
@@ -37,12 +32,9 @@ async def post_fit(request: Annotated[FitRequest, Body()]):
     response_model=FitStatusResponse,
     summary="Получение статуса асинхронной задачи обучения",
 )
-async def get_fit_status(task_id: Annotated[TaskId, Query(min_length=1)]):
-    try:
-        status = models_service.get_fit_status(task_id)
-        return FitStatusResponse(status=status)
-    except Exception as e:  # TODO: уточнить тип ошибки
-        return FitStatusResponse(status=FitStatus.FAILED, error=str(e))
+async def get_fit_status(model_id: Annotated[ModelId, Query(min_length=1)]):
+    status, error = models_service.get_fit_status(model_id)
+    return FitStatusResponse(status=status, error=error)
 
 
 @router.get(
@@ -70,9 +62,9 @@ async def activate_model(model_id: Annotated[ModelId, Query(min_length=1)]):
 )
 async def predict(request: Annotated[SinglePredictRequest, Body()]):
     try:
-        model_id, prediction, probability = models_service.predict_single(request)
+        predict_result = models_service.single_predict(request)
         return SinglePredictResponse(
-            model_id=model_id, prediction=prediction, prediction_proba=probability
+            prediction=predict_result,
         )
     except Exception as e:  # TODO: уточнить тип ошибки
         raise HTTPException(status_code=400, detail=str(e))
@@ -85,10 +77,8 @@ async def predict(request: Annotated[SinglePredictRequest, Body()]):
 )
 async def predict_csv(request: Annotated[PredictCsvRequest, File()]):
     try:
-        model_id, predictions, probabilities = models_service.predict_csv(file)
-        return PredictCsvResponse(
-            model_id=model_id, predictions=predictions, prediction_probas=probabilities
-        )
+        predict_result = models_service.predict_csv(request)
+        return PredictCsvResponse(predictions=predict_result)
     except Exception as e:  # TODO: уточнить тип ошибки
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -101,6 +91,6 @@ async def predict_csv(request: Annotated[PredictCsvRequest, File()]):
 async def get_model_info(model_id: Annotated[ModelId, Query(min_length=1)]):
     try:
         model_info = models_service.get_model_info(model_id)
-        return model_info
+        return ModelInfoResponse(model_info=model_info)
     except Exception as e:  # TODO: уточнить тип ошибки
         raise HTTPException(status_code=400, detail=str(e))

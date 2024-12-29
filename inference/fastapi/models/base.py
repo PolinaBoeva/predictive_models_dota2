@@ -3,10 +3,12 @@ from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
 
-TaskId = str
-
 AccountId = int
 HeroName = str
+ModelId = str
+Hyperparameters = Dict[str, Any]
+PredictionProba = float
+ErrorMessage = str
 
 
 class Player(BaseModel):
@@ -15,11 +17,6 @@ class Player(BaseModel):
 
 
 Team = List[Player]
-
-
-ModelId = str
-Hyperparameters = Dict[str, Any]
-PredictionProba = float
 
 
 class ModelType(str, Enum):
