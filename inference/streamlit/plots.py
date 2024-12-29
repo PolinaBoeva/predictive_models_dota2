@@ -39,31 +39,31 @@ def create_result_pie_chart(player_data):
 
 # Количество убийств по игрокам (в разрезе героев)
 def create_kills_bar_chart(df_players):
-    fig_kills = px.bar(
+    fig = px.bar(
         df_players,
         x='account_id',
         y='kills',
         color='hero_name',
         labels={'account_id': 'ID игрока', 'kills': 'Убийства', 'hero_name': 'Имя героя'}
     )
-    fig_kills.update_layout(
+    fig.update_layout(
         xaxis={'categoryorder': 'category ascending'},
         bargap=0,
         bargroupgap=0
     )
-    return fig_kills
+    return fig
 
 
 # Смерти по игрокам (в разрезе героев)
 def create_deaths_plot(df_players):
-    fig_deaths = px.bar(
+    fig = px.bar(
         df_players,
         x='account_id',
         y='deaths',
         color='hero_name',
         labels={'account_id': 'ID игрока', 'deaths': 'Смерти', 'hero_name': 'Имя героя'}
     )
-    return fig_deaths
+    return fig
 
 
 # топ-10 популярных героев
@@ -94,7 +94,7 @@ def create_selected_heroes_plot(filtered_df, attribute):
 
 # Box-plot распределения убийств по выбранным героям
 def create_box_plot(filtered_df, attribute):
-    fig2 = px.box(
+    fig = px.box(
         filtered_df,
         x="hero_name",
         y=attribute,
@@ -102,8 +102,8 @@ def create_box_plot(filtered_df, attribute):
         labels={"hero_name": "Имя героя", attribute: attribute.capitalize()},
         height=600
     )
-    fig2.update_layout(xaxis_title="Имя героя", yaxis_title=attribute.capitalize())
-    return fig2
+    fig.update_layout(xaxis_title="Имя героя", yaxis_title=attribute.capitalize())
+    return fig
 
 
 
@@ -117,16 +117,10 @@ def create_winrate_pie_chart(df):
         'Команда': ['Radiant', 'Dire'],
         'Победы': [radiant_wins, dire_wins]
     })
-    fig_pie = px.pie(win_data, names='Команда', values='Победы')
-    return fig_pie
+    fig = px.pie(win_data, names='Команда', values='Победы')
+    return fig
 
 # Зависимость длительности матча на результат
-# plots.py
-
-import pandas as pd
-import plotly.express as px
-
-
 def create_duration_histogram(df):
     mapping = {0: 'Поражение', 1: 'Победа'}
     df['win'] = df['win'].replace(mapping)
