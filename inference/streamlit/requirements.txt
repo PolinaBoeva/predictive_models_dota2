@@ -4,3 +4,6 @@ pandas
 numpy
 scikit-learn
 catboost
+plotly
+seaborn
+matplotlib
