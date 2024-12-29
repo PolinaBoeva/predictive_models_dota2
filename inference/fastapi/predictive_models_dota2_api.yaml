@@ -110,7 +110,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: "#/components/schemas/PredictResponse"
+                                $ref: "#/components/schemas/SinglePredictResponse"
 
     /api/v1/models/predict_csv:
         post:
@@ -143,7 +143,7 @@ paths:
                   name: model_id
                   required: true
                   schema:
-                      type: string
+                      $ref: "#/components/schemas/ModelId"
                   description: "Идентификатор модели"
             responses:
                 "200":
@@ -262,6 +262,75 @@ components:
             example: 12.34
             minimum: 0
 
+        ModelInfo:
+            type: object
+            additionalProperties: false
+            properties:
+                model_id:
+                    $ref: "#/components/schemas/ModelId"
+                model_type:
+                    $ref: "#/components/schemas/ModelType"
+                feature_importances:
+                    $ref: "#/components/schemas/FeatureImportances"
+                fit_time:
+                    type: number
+                    format: float
+                    example: 12.34
+                metrics:
+                    type: object
+                    additionalProperties:
+                        type: number
+                    example:
+                        accuracy: 0.95
+                        roc_auc: 0.93
+            required:
+                - model_id
+                - model_type
+                - fit_time
+
+        SinglePredictResult:
+            type: object
+            properties:
+                model_id:
+                    $ref: "#/components/schemas/ModelId"
+                prediction:
+                    $ref: "#/components/schemas/Prediction"
+                prediction_proba:
+                    $ref: "#/components/schemas/PredictionProba"
+            required:
+                - model_id
+                - prediction
+                - prediction_proba
+
+        PredictCsvResult:
+            type: object
+            additionalProperties: false
+            properties:
+                model_id:
+                    $ref: "#/components/schemas/ModelId"
+                predictions:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/Prediction"
+                    description: "Список предсказаний для каждой строки"
+                    example:
+                        - "Radiant"
+                        - "Dire"
+                        - "Radiant"
+                prediction_probas:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/PredictionProba"
+                    description: "Список вероятностей победы Radiant"
+                    example:
+                        - 0.75
+                        - 0.45
+                        - 0.80
+            required:
+                - model_id
+                - predictions
+                - prediction_probas
+
         FitRequest:
             type: object
             additionalProperties: false
@@ -299,48 +368,17 @@ components:
             required:
                 - file
 
-        PredictResponse:
+        SinglePredictResponse:
             type: object
             properties:
-                model_id:
-                    $ref: "#/components/schemas/ModelId"
                 prediction:
-                    $ref: "#/components/schemas/Prediction"
-                prediction_proba:
-                    $ref: "#/components/schemas/PredictionProba"
-            required:
-                - model_id
-                - prediction
-                - prediction_proba
+                    $ref: "#/components/schemas/SinglePredictResult"
 
         PredictCsvResponse:
             type: object
-            additionalProperties: false
             properties:
-                model_id:
-                    $ref: "#/components/schemas/ModelId"
                 predictions:
-                    type: array
-                    items:
-                        $ref: "#/components/schemas/Prediction"
-                    description: "Список предсказаний для каждой строки"
-                    example:
-                        - "Radiant"
-                        - "Dire"
-                        - "Radiant"
-                prediction_probas:
-                    type: array
-                    items:
-                        $ref: "#/components/schemas/PredictionProba"
-                    description: "Список вероятностей победы Radiant"
-                    example:
-                        - 0.75
-                        - 0.45
-                        - 0.80
-            required:
-                - model_id
-                - predictions
-                - prediction_probas
+                    $ref: "#/components/schemas/PredictCsvResult"
 
         FitResponse:
             type: object
@@ -382,27 +420,10 @@ components:
             type: object
             additionalProperties: false
             properties:
-                model_id:
-                    $ref: "#/components/schemas/ModelId"
-                model_type:
-                    $ref: "#/components/schemas/ModelType"
-                feature_importances:
-                    $ref: "#/components/schemas/FeatureImportances"
-                fit_time:
-                    type: number
-                    format: float
-                    example: 12.34
-                metrics:
-                    type: object
-                    additionalProperties:
-                        type: number
-                    example:
-                        accuracy: 0.95
-                        roc_auc: 0.93
+                model_info:
+                    $ref: "#/components/schemas/ModelInfo"
             required:
-                - model_id
-                - model_type
-                - fit_time
+                - model_info
 
         AccountIdsResponse:
             type: object

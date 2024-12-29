@@ -1,8 +1,14 @@
-from typing import Any, Dict, List
+from typing import List
 
-from pydantic import ConfigDict, Field, BaseModel
+from pydantic import ConfigDict, BaseModel, Field
 
-from models.base import FitStatus, ModelId, ModelType, Prediction, PredictionProba
+from models.base import (
+    FitStatus,
+    ModelId,
+    ModelInfo,
+    SinglePredictResult,
+    PredictCsvResult,
+)
 
 
 class FitResponse(BaseModel):
@@ -19,23 +25,15 @@ class ModelsListResponse(BaseModel):
 
 
 class SinglePredictResponse(BaseModel):
-    modelId: ModelId = Field(alias="model_id")
-    prediction: Prediction
-    prediction_proba: PredictionProba
+    prediction: SinglePredictResult
 
 
 class PredictCsvResponse(BaseModel):
-    modelId: ModelId = Field(alias="model_id")
-    predictions: List[Prediction]
-    prediction_probas: List[PredictionProba]
+    predictions: PredictCsvResult
 
 
 class ModelInfoResponse(BaseModel):
-    modelId: ModelId = Field(alias="model_id")
-    modelType: ModelType = Field(alias="model_type")
-    feature_importances: List[Dict[str, Any]] | None
-    fit_time: float
-    metrics: Dict[str, float] | None
+    modelInfo: ModelInfo = Field(alias="model_info")
 
 
 class AccountIdsListResponse(BaseModel):

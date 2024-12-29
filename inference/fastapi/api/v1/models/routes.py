@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Body
+from fastapi import APIRouter, File, HTTPException, Query, Body
 
 from models.base import FitStatus, TaskId, ModelId
 from models.requests import SinglePredictRequest, PredictCsvRequest, FitRequest
@@ -60,7 +60,7 @@ async def get_models_list():
     summary="Установка активной модели для прогноза",
 )
 async def activate_model(model_id: Annotated[ModelId, Query(min_length=1)]):
-    models_service.activate_model(request)
+    models_service.activate_model(model_id)
 
 
 @router.post(
@@ -68,7 +68,7 @@ async def activate_model(model_id: Annotated[ModelId, Query(min_length=1)]):
     response_model=SinglePredictResponse,
     summary="Прогноз исхода на основе выбора героев",
 )
-def predict(request: Annotated[SinglePredictRequest, Body()]):
+async def predict(request: Annotated[SinglePredictRequest, Body()]):
     try:
         model_id, prediction, probability = models_service.predict_single(request)
         return SinglePredictResponse(
@@ -83,7 +83,7 @@ def predict(request: Annotated[SinglePredictRequest, Body()]):
     response_model=PredictCsvResponse,
     summary="Прогноз исхода на основе CSV-файла",
 )
-async def predict_csv(file: Annotated[UploadFile, File()]):
+async def predict_csv(request: Annotated[PredictCsvRequest, File()]):
     try:
         model_id, predictions, probabilities = models_service.predict_csv(file)
         return PredictCsvResponse(
@@ -102,5 +102,5 @@ async def get_model_info(model_id: Annotated[ModelId, Query(min_length=1)]):
     try:
         model_info = models_service.get_model_info(model_id)
         return model_info
-    except Exception as e:
+    except Exception as e:  # TODO: уточнить тип ошибки
         raise HTTPException(status_code=400, detail=str(e))

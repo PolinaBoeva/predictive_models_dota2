@@ -1,17 +1,30 @@
 from enum import Enum
 from typing import Any, Dict, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+TaskId = str
+
+AccountId = int
+HeroName = str
+
+
+class Player(BaseModel):
+    account_id: AccountId
+    hero_name: HeroName | None
+
+
+Team = List[Player]
+
+
+ModelId = str
+Hyperparameters = Dict[str, Any]
+PredictionProba = float
 
 
 class ModelType(str, Enum):
     CAT_BOOST = "CatBoost"
     RIDGE_CLASSIFIER = "RidgeClassifier"
-
-
-class Player(BaseModel):
-    account_id: int
-    hero_name: str | None
 
 
 class Prediction(str, Enum):
@@ -25,8 +38,21 @@ class FitStatus(str, Enum):
     RUNNING = "Running"
 
 
-TaskId = str
-Team = List[Player]
-ModelId = str
-Hyperparameters = Dict[str, Any]
-PredictionProba = float
+class SinglePredictResult(BaseModel):
+    modelId: ModelId = Field(alias="model_id")
+    prediction: Prediction
+    prediction_proba: PredictionProba
+
+
+class PredictCsvResult(BaseModel):
+    modelId: ModelId = Field(alias="model_id")
+    predictions: List[Prediction]
+    prediction_probas: List[PredictionProba]
+
+
+class ModelInfo(BaseModel):
+    modelId: ModelId = Field(alias="model_id")
+    modelType: ModelType = Field(alias="model_type")
+    feature_importances: List[Dict[str, Any]] | None
+    fit_time: float
+    metrics: Dict[str, float] | None
