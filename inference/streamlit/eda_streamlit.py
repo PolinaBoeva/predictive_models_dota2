@@ -4,7 +4,7 @@ import pandas as pd
 from utils import get_top_10_heroes
 from plots import plot_metric_histogram, create_result_pie_chart, create_hero_name_distribution_plot,\
     create_distribution_plot, create_top_10_heroes_plot, create_selected_heroes_plot, create_box_plot,\
-    create_winrate_pie_chart, create_duration_histogram, create_kda_scatter_plot
+    create_winrate_pie_chart, create_histogram_for_variable, create_kda_scatter_plot
 
 # Основная информация о датасете
 def display_dataset_info(df):
@@ -134,7 +134,7 @@ def display_graphics(df):
     with st.expander("### Посмотреть информацию"):
         top_10_heroes = get_top_10_heroes(df)
 
-        st.write("#### Самые популярные герои")
+        st.write("#### ТОП-10 самых популярных героев")
         fig = create_top_10_heroes_plot(df, top_10_heroes)
         st.plotly_chart(fig)
 
@@ -176,8 +176,17 @@ def display_graphics(df):
         fig = create_winrate_pie_chart(df)
         st.plotly_chart(fig)
 
-        st.write("#### Зависимость длительности матча на результат")
-        fig = create_duration_histogram(df)
+        st.write("#### Зависимость различных переменных на результат матча")
+        variables = [
+            'kills',
+            'deaths',
+            'gold_per_min',
+            'xp_per_min',
+            'level'
+        ]
+        selected_variable = st.selectbox("Выберите переменную для анализа:", variables)
+        st.write("Зависимость {} на результат".format(selected_variable))
+        fig = create_histogram_for_variable(df, selected_variable)
         st.plotly_chart(fig)
 
         st.write("#### Соотношение KDA и убийств в минуту")
