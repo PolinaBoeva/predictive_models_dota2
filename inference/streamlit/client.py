@@ -51,3 +51,4 @@ class DataAPIClient:
             return response.json()  # Предполагается, что API возвращает список account_ids
         else:
             raise Exception("Не удалось получить Account IDs из API.")
+
