@@ -18,3 +18,4 @@ def get_catboost_params(params):
     params["depth"] = st.slider("Depth", min_value=1, max_value=16, value=6)
     params["iterations"] = st.number_input("Iterations", value=100, min_value=1)
     params["l2_leaf_reg"] = st.number_input("L2 Leaf Regularization", value=3, min_value=1, max_value=10)
+
