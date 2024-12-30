@@ -56,3 +56,4 @@ def fit_model(api_client):
         end_time = time.time()
         st.write(f"⏳ Время обучения составило: {end_time - start_time:.2f} сек")
         logger.info(f"Обучение модели завершено. Время обучения: {end_time - start_time:.2f} секунд.")
+

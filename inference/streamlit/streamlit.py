@@ -53,5 +53,7 @@ def main():
     elif st.session_state.page == "ℹ️ Информация о модели":
         display_model_info(models_api_client)
 
+
 if __name__ == "__main__":
     main()
+

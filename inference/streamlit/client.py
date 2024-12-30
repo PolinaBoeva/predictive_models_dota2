@@ -73,3 +73,4 @@ class DataAPIClient:
         else:
             logger.error("Не удалось получить Account IDs из API.")
             raise Exception("Не удалось получить Account IDs из API.")
+

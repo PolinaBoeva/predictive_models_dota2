@@ -70,3 +70,4 @@ def predict_model(models_api_client, data_api_client):
         except Exception as e:
             st.error(f"Ошибка при отправке тестового файла: {str(e)}.")
             logger.error(f"Ошибка при отправке тестового файла: {str(e)}.")
+
