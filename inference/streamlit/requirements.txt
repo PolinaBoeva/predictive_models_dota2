@@ -6,4 +6,7 @@ seaborn
 numpy
 scikit-learn
 catboost
+plotly
+seaborn
+matplotlib
 matplotlib
