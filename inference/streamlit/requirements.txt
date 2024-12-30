@@ -1,6 +1,9 @@
 streamlit
+requests
 pandas
 plotly
 seaborn
 numpy
+scikit-learn
+catboost
 matplotlib
