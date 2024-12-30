@@ -1,13 +1,13 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
+from concurrent.futures import ThreadPoolExecutor, Future
+import threading
 
 import pandas as pd
+from catboost import CatBoostClassifier
+from sklearn.linear_model import LinearRegression
 
 from models.base import (
     ModelId,
-    ModelType,
-    Prediction,
-    PredictionProba,
-    FitStatus,
     ErrorMessage,
     ModelInfo,
     SinglePredictResult,
@@ -18,48 +18,42 @@ from models.requests import (
     SinglePredictRequest,
     PredictCsvRequest,
 )
+from predictive_models_dota2.clients.model_predictor import ModelsPredictor
+from predictive_models_dota2.clients.model_trainer import ModelTrainer
+from predictive_models_dota2.clients.models_database import ModelsDatabase
+from predictive_models_dota2.data.extract_features import DataPreprocessor
 
 
 class ModelsClient:
-    def fit_model(self, request: FitRequest):
-        # TODO: implement
-        pass
+    def __init__(self, train_data_path: str = "data/prepared/dota_23_24.csv"):
+        self._models_database = ModelsDatabase()
+        data_preprocessor = DataPreprocessor()
+        self._model_trainer = ModelTrainer(
+            models_database=self._models_database,
+            train_data_path=train_data_path,
+            data_preprocessor=data_preprocessor,
+        )
+        self._model_predictor = ModelsPredictor(
+            models_database=self._models_database, data_preprocessor=data_preprocessor
+        )
 
-    def get_fit_status(self, task_id: ModelId) -> Tuple[FitStatus, ErrorMessage | None]:
-        # TODO: implement
-        return FitStatus.SUCCESS, None
+    def fit_model(self, request: FitRequest) -> ModelId:
+        return self._model_trainer.start_fit(request)
+
+    def get_fit_status(self, task_id: ModelId) -> Tuple[str, ErrorMessage | None]:
+        return self._model_trainer.get_fit_status(task_id)
 
     def get_models_list(self) -> List[ModelId]:
-        # TODO: implement
-        return [ModelId("123")]
+        return self._models_database.get_models_list()
 
     def activate_model(self, request: ModelId) -> None:
-        # TODO: implement
-        return
+        self._models_database.activate_model(request)
 
     def single_predict(self, request: SinglePredictRequest) -> SinglePredictResult:
-        # TODO: implement
-        return SinglePredictResult(
-            model_id=ModelId("123"),
-            prediction=Prediction.RADIANT,
-            prediction_proba=PredictionProba(0.5),
-        )
+        return self._model_predictor.single_predict(request)
 
     def predict_csv(self, request: PredictCsvRequest) -> PredictCsvResult:
-        # TODO: implement
-        data = pd.read_csv(request.csv_data.decode("utf-8"))
-        return PredictCsvResult(
-            model_id=ModelId("123"),
-            predictions=[Prediction.RADIANT] * len(data),
-            prediction_probas=[PredictionProba(0.5)] * len(data),
-        )
+        return self._model_predictor.predict_csv(request)
 
     def get_model_info(self, model_id: ModelId) -> ModelInfo:
-        # TODO: implement
-        return ModelInfo(
-            model_id=ModelId(model_id),
-            model_type=ModelType.CAT_BOOST,
-            feature_importances=None,
-            fit_time=10.0,
-            metrics=None,
-        )
+        return self._models_database.get_model_info(model_id)
