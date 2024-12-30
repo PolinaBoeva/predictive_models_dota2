@@ -1,4 +1,5 @@
 import streamlit as st
+
 # Функция для получения 10 самых популярных героев
 def get_top_10_heroes(df):
 
