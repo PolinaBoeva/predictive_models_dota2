@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import logging
 
 from utils import get_top_10_heroes
 from plots import (plot_metric_histogram,
@@ -12,9 +13,15 @@ from plots import (plot_metric_histogram,
                    create_histogram_for_variable,
                    create_kda_scatter_plot)
 
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Основная информация о датасете
 def display_dataset_info(df):
+    """Отображение основной информации о загруженном датасете."""
     st.write("### Основная информация о данных")
+    logger.info("Отображение основной информации о данных.")
     with st.expander("### Посмотреть основную информацию"):
         st.dataframe(df.head(2000))
         st.write(f"**Размер датасета:** {df.shape[0]} строк, {df.shape[1]} столбцов")
@@ -31,7 +38,9 @@ def display_dataset_info(df):
 
 # Статистика по выбранному игроку
 def display_selected_player_info(df):
+    """Отображение статистики по выбранному игроку."""
     st.write("### Статистика по выбранному игроку")
+    logger.info("Отображение статистики по выбранному игроку.")
     with st.expander("### Посмотреть статистику по игроку"):
         match_count = df.groupby('account_id')['match_id'].count()
         most_matches_account_id = match_count.idxmax()
@@ -82,7 +91,9 @@ def display_selected_player_info(df):
 
 # Статистика по выбранному матчу
 def display_selected_player_match(df):
+    """Отображение статистики по выбранному матчу."""
     st.write("### Статистика по выбранному матчу")
+    logger.info("Отображение статистики по выбранному матчу.")
     with st.expander("### Посмотреть статистику по матчу"):
         max_players_match_id = str(df['match_id'].value_counts().idxmax())
 
@@ -101,6 +112,7 @@ def display_selected_player_match(df):
         radiant_win = match_data['isRadiant'].iloc[0] == 1 and match_data['win'].iloc[0] == 1
         winning_team = "Radiant" if radiant_win else "Dire"
         st.write(f"### Победившая команда: *{winning_team}*")
+        logger.info(f"Победившая команда в матче {selected_match_id}: {winning_team}")
 
         st.write("#### Игроки, участвовавшие в матче:")
         players_info = match_data[['account_id', 'isRadiant', 'hero_name']]
@@ -131,7 +143,9 @@ def display_selected_player_match(df):
 
 # Построение графиков по историческим данным
 def display_graphics(df):
+    """Отображение графиков общей аналитики исторических данных."""
     st.write("### Общая аналитика исторических данных")
+    logger.info("Отображение общей аналитики исторических данных.")
     with st.expander("### Посмотреть информацию"):
         top_10_heroes = get_top_10_heroes(df)
 
@@ -172,7 +186,6 @@ def display_graphics(df):
         fig = create_box_plot(filtered_df, attribute)
         st.plotly_chart(fig)
 
-
         st.write("#### Победы команд Radiant vs Dire")
         fig = create_winrate_pie_chart(df)
         st.plotly_chart(fig)
@@ -196,7 +209,9 @@ def display_graphics(df):
         st.plotly_chart(fig)
 
 def run_eda_streamlit():
+    """Запуск приложения для анализа данных."""
     st.title("Предсказательные модели для Dota 2")
+    logger.info("Запуск EDA по историческим данным матчей Dota 2.")
     st.write("EDA по историческим данным матчей Dota 2")
     image_url = "https://i.ibb.co/sjX0ntw/19459.webp"
     st.image(image_url)
@@ -208,7 +223,7 @@ def run_eda_streamlit():
     upload_file = st.file_uploader("Загрузите CSV-файл", type=['csv'])
 
     if upload_file is not None:
-
+        logger.info(f"Загружен файл: {upload_file.name}")
         df = pd.read_csv(upload_file)
 
         display_dataset_info(df)
@@ -221,6 +236,7 @@ def run_eda_streamlit():
 
     else:
         st.write("Пожалуйста, загрузите файл с историческими данными")
+        logger.warning("Пользователь не загрузил файл с данными.")
 
 if __name__ == "__main__":
     run_eda_streamlit()
