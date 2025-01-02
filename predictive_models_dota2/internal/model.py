@@ -4,7 +4,14 @@ import numpy as np
 from sklearn.linear_model import RidgeClassifier
 from sklearn.base import BaseEstimator
 
-from models.base import ModelInfo, ModelType, ModelId, Hyperparameters, Prediction, PredictionProba
+from models.base import (
+    ModelInfo,
+    ModelType,
+    ModelId,
+    Hyperparameters,
+    Prediction,
+    PredictionProba,
+)
 
 
 class Model:
@@ -32,7 +39,7 @@ class Model:
     def predict_proba(self, X) -> List:
         if self.model_type == ModelType.RIDGE_CLASSIFIER:
             d = self.model.decision_function(X)
-            prediction_probas = 1/(1+(np.exp((-d))))
+            prediction_probas = 1 / (1 + (np.exp((-d))))
         else:
             prediction_probas = self.model.predict_proba(X)[:, 1]
         result = [PredictionProba(proba) for proba in prediction_probas]
@@ -47,7 +54,7 @@ class Model:
             fit_time=self.fit_time,
             metrics=None,
         )
-    
+
     def _get_win_team(self, prediction: int) -> Prediction:
         return Prediction.RADIANT if prediction == 1 else Prediction.DIRE
 

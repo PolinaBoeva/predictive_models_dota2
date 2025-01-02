@@ -25,10 +25,10 @@ class ModelsService:
         self._model_trainer = ModelTrainer(
             models_database=self._models_database,
             train_dataset=self.train_dataset,
-            data_preprocessor=self.data_preprocessor,
         )
         self._model_predictor = ModelsPredictor(
-            models_database=self._models_database, data_preprocessor=self.data_preprocessor
+            models_database=self._models_database,
+            data_preprocessor=self.data_preprocessor,
         )
 
     def fit_model(self, request: FitRequest) -> ModelId:

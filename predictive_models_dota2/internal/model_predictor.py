@@ -20,7 +20,6 @@ class ModelsPredictor:
         self, models_database: ModelsDatabase, data_preprocessor: DataPreprocessor
     ):
         self._models_database = models_database
-        self._data_preprocessor = data_preprocessor
         self._prediction_data_fetcher = PredictionDataFetcher(data_preprocessor)
 
     def single_predict(self, request: SinglePredictRequest) -> SinglePredictResult:
@@ -50,4 +49,3 @@ class ModelsPredictor:
             predictions=predictions,
             prediction_probas=prediction_probas,
         )
-    

@@ -16,12 +16,15 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def fit_model(api_client: ModelsAPIClient):
     """Функция для обучения модели."""
     st.header("Обучение модели")
     logger.info("Инициализация процесса обучения модели.")
 
-    model_type_input = st.selectbox("Выберите модель", ["⚖️ Ridge Classifier", "🧠 CatBoost Classifier"])
+    model_type_input = st.selectbox(
+        "Выберите модель", ["⚖️ Ridge Classifier", "🧠 CatBoost Classifier"]
+    )
     logger.info(f"Выбрана модель: {model_type_input}")
 
     st.subheader("Гиперпараметры модели")
@@ -39,7 +42,11 @@ def fit_model(api_client: ModelsAPIClient):
     model_id = st.text_input("Введите ID модели", value="model")
 
     if st.button("🚀 Обучить модель"):
-        fit_request = {"model_type" : model_type, "model_id" : model_id, "hyperparameters" : hyperparameters}
+        fit_request = {
+            "model_type": model_type,
+            "model_id": model_id,
+            "hyperparameters": hyperparameters,
+        }
         # Запуск обучения модели
         logger.info("Запуск обучения модели.")
         start_time = time.time()
@@ -51,10 +58,12 @@ def fit_model(api_client: ModelsAPIClient):
             status_response = api_client.get_fit_status(model_id)
             st.write(f"Статус обучения: {status_response['status']}")
             logger.info(f"Текущий статус обучения: {status_response['status']}")
-            if status_response['status'] in ["Success", "Failed"]:
+            if status_response["status"] in ["Success", "Failed"]:
                 break
             time.sleep(2)  # Задержка перед следующей проверкой
 
         end_time = time.time()
         st.write(f"⏳ Время обучения составило: {end_time - start_time:.2f} сек")
-        logger.info(f"Обучение модели завершено. Время обучения: {end_time - start_time:.2f} секунд.")
+        logger.info(
+            f"Обучение модели завершено. Время обучения: {end_time - start_time:.2f} секунд."
+        )

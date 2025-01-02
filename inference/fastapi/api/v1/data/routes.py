@@ -9,6 +9,7 @@ logger = fastapi_logging.get_logger(__name__)
 router = APIRouter()
 data_service = DataService()
 
+
 @router.get(
     "/account_ids",
     response_model=AccountIdsListResponse,

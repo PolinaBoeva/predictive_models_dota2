@@ -1,32 +1,19 @@
 from typing import List, Tuple, Dict, Any
 from concurrent.futures import ThreadPoolExecutor, Future
-import threading
-
-import pandas as pd
-from catboost import CatBoostClassifier
-from sklearn.linear_model import RidgeClassifier
-from sklearn.base import BaseEstimator
 
 from models.base import (
     ModelId,
     FitStatus,
     ErrorMessage,
-    SinglePredictResult,
-    PredictCsvResult,
-    Hyperparameters,
 )
 from models.requests import (
     FitRequest,
-    SinglePredictRequest,
-    PredictCsvRequest,
 )
-from predictive_models_dota2.internal.model import Model, ModelsFactory
-from predictive_models_dota2.internal.model_predictor import ModelsPredictor
+from predictive_models_dota2.internal.model import ModelsFactory
 from predictive_models_dota2.internal.models_database import ModelsDatabase
 from predictive_models_dota2.data.datasets import TrainDataset
 from predictive_models_dota2.data.extract_features import (
     DataPreprocessor,
-    PredictionDataFetcher,
 )
 
 
@@ -34,7 +21,6 @@ class ModelTrainer:
     def __init__(
         self,
         models_database: ModelsDatabase,
-        data_preprocessor: DataPreprocessor,
         train_dataset: TrainDataset,
     ):
         self._executor = ThreadPoolExecutor(max_workers=2)
@@ -77,7 +63,7 @@ class ModelTrainer:
         future = self._tasks.get(model_id)
 
         if not future:
-            raise ValueError("Model not found") # TODO: сделать кастомную ошибку
+            raise ValueError("Model not found")  # TODO: сделать кастомную ошибку
 
         if future.running():
             return FitStatus.RUNNING, None

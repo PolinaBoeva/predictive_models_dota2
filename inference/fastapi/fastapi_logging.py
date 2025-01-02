@@ -34,6 +34,7 @@ def get_logger(name: str) -> logging.Logger:
 
     return logging.getLogger(name)
 
+
 def close_logger(logger: logging.Logger):
     for handler in logger.handlers:
         handler.close()
