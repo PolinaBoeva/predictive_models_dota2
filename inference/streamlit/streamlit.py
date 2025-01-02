@@ -7,7 +7,8 @@ from eda_streamlit import run_eda_streamlit
 import logging
 
 import ptvsd
-ptvsd.enable_attach(address=('localhost', 5678), redirect_output=True)
+
+ptvsd.enable_attach(address=("localhost", 5678), redirect_output=True)
 
 ptvsd.wait_for_attach()
 
@@ -15,9 +16,10 @@ ptvsd.wait_for_attach()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def main():
     # Инициализация API
-    host = ("http://localhost")  # Замените на рабочий хост
+    host = "http://localhost"  # Замените на рабочий хост
     port = 8000  # Замените на рабочий порт
     models_api_client = ModelsAPIClient(host, port)
     data_api_client = DataAPIClient(host, port)
@@ -28,9 +30,9 @@ def main():
     st.title("Модель по анализу данных")
 
     # Инициализация состояния сессии
-    if 'page' not in st.session_state:
+    if "page" not in st.session_state:
         st.session_state.page = "📊 EDA"
-    if 'models' not in st.session_state:
+    if "models" not in st.session_state:
         st.session_state.models = []
 
     # Создание вертикального меню с кнопками
@@ -61,4 +63,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -167,7 +167,7 @@ class DataPreprocessor:
         self.df_train: Optional[pd.DataFrame] = None
         self.df_test_team: Optional[pd.DataFrame] = None
 
-    def fit(self, df_train: pd.DataFrame) -> 'DataPreprocessor':
+    def fit(self, df_train: pd.DataFrame) -> "DataPreprocessor":
         """
         Вычисление агрегированных статистик на тренировочных данных.
 

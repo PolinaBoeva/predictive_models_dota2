@@ -9,7 +9,9 @@ def display_model_info(api_client):
     if st.button("Загрузить список обученных моделей"):
         model_list_response = api_client.get_model_list()
         if model_list_response:
-            st.session_state.models = model_list_response['models']  # Сохраняем список моделей
+            st.session_state.models = model_list_response[
+                "models"
+            ]  # Сохраняем список моделей
             st.write("Обученные модели:")
             st.write(st.session_state.models)
 
