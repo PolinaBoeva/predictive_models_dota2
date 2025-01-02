@@ -1,3 +1,4 @@
+from fastapi import UploadFile
 from pydantic import Field, BaseModel
 
 from models.base import Team, ModelId, ModelType, Hyperparameters
@@ -22,9 +23,7 @@ class SinglePredictRequest(BaseModel):
     dire_team: Team
 
 
-class PredictCsvRequest(BaseModel):
-    # Храним «сырые» байты CSV, полученные из UploadFile
-    csv_data: bytes
+PredictCsvRequest = UploadFile
 
 
 class ModelInfoRequest(BaseModel):

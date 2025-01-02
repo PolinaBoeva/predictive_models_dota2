@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException, Query, Body
+from fastapi import APIRouter, File, Query, Body
 
 import fastapi_logging
 from models.base import ModelId
@@ -28,7 +28,7 @@ models_service = ModelsService()
     status_code=202,
 )
 async def post_fit(request: Annotated[FitRequest, Body()]):
-    logger.info(f"Запуск асинхронного обучения модели.: {request.model_dump_json()}")
+    logger.info(f"POST /api/v1/models/fit: {request.model_dump_json()}")
     models_service.fit_model(request)
 
 
@@ -38,9 +38,9 @@ async def post_fit(request: Annotated[FitRequest, Body()]):
     summary="Получение статуса асинхронной задачи обучения",
 )
 async def get_fit_status(model_id: Annotated[ModelId, Query(min_length=1)]):
-    logger.info(f"Получение статуса асинхронной задачи обучения: {model_id}")
+    logger.info(f"GET /api/v1/models/fit/status: {model_id}")
     status, error = models_service.get_fit_status(model_id)
-    logger.info(f"Статус: {status}, Ошибка: {error}")
+    logger.info(f"Status: {status}, Error: {error}")
     return FitStatusResponse(status=status, error=error)
 
 
@@ -50,9 +50,9 @@ async def get_fit_status(model_id: Annotated[ModelId, Query(min_length=1)]):
     summary="Список всех обученных моделей",
 )
 async def get_models_list():
-    logger.info("Запрос списка всех обученных моделей.")
+    logger.info("GET /api/v1/models/list")
     models = models_service.get_models_list()
-    logger.info(f"Список моделей: {models}")
+    logger.info(f"Models: {models}")
     return ModelsListResponse(models=models)
 
 
@@ -61,9 +61,9 @@ async def get_models_list():
     summary="Установка активной модели для прогноза",
 )
 async def activate_model(model_id: Annotated[ModelId, Query(min_length=1)]):
-    logger.info(f"Активация модели для прогноза: {model_id}")
+    logger.info(f"PUT /api/v1/models/activate: {model_id}")
     models_service.activate_model(model_id)
-    logger.info(f"Модель активирована: {model_id}")
+    logger.info(f"Model {model_id} activated.")
 
 
 @router.post(
@@ -72,9 +72,9 @@ async def activate_model(model_id: Annotated[ModelId, Query(min_length=1)]):
     summary="Прогноз исхода на основе выбора героев",
 )
 async def predict(request: Annotated[SinglePredictRequest, Body()]):
-    logger.info(f"Прогноз исхода на основе выбора героев: {request.model_dump_json()}")
+    logger.info(f"POST /api/v1/models/predict: {request.model_dump_json()}")
     predict_result = models_service.single_predict(request)
-    logger.info(f"Результат прогноза: {predict_result.model_dump_json()}")
+    logger.info(f"Predict result: {predict_result}")
     return SinglePredictResponse(
         prediction=predict_result,
     )
@@ -86,9 +86,10 @@ async def predict(request: Annotated[SinglePredictRequest, Body()]):
     summary="Прогноз исхода на основе CSV-файла",
 )
 async def predict_csv(request: Annotated[PredictCsvRequest, File()]):
+    logger.info(f"POST /api/v1/models/predict_csv: {request.filename}")
     predict_result = models_service.predict_csv(request)
+    logger.info(f"Predict result: {predict_result}")
     return PredictCsvResponse(predictions=predict_result)
-    
 
 
 @router.get(
@@ -97,8 +98,7 @@ async def predict_csv(request: Annotated[PredictCsvRequest, File()]):
     summary="Получение информации о модели",
 )
 async def get_model_info(model_id: Annotated[ModelId, Query(min_length=1)]):
-    try:
-        model_info = models_service.get_model_info(model_id)
-        return ModelInfoResponse(model_info=model_info)
-    except Exception as e:  # TODO: уточнить тип ошибки
-        raise HTTPException(status_code=400, detail=str(e))
+    logger.info(f"GET /api/v1/models/model_info: {model_id}")
+    model_info = models_service.get_model_info(model_id)
+    logger.info(f"Model info: {model_info}")
+    return ModelInfoResponse(model_info=model_info)

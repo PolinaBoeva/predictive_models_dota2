@@ -26,6 +26,7 @@ app.include_router(data_routes.router, prefix="/api/v1/data", tags=["data"])
 
 @app.exception_handler(ValueError)
 async def value_error_exception_handler(request: Request, exc: ValueError):
+    logger.error(f"Error occurred: {exc}")
     return JSONResponse(
         status_code=400,
         content={"message": str(exc)},
@@ -33,12 +34,11 @@ async def value_error_exception_handler(request: Request, exc: ValueError):
 
 
 if __name__ == "__main__":
-    logger.info("Запуск сервера FastAPI.")
+    logger.info("Starting FastAPI Server...")
     uvicorn.run(
         "app:app",
         host=get_config().fastapi_config.host,
         port=get_config().fastapi_config.port,
         reload=True,
     )
-    logger.info("Остановка сервера FastAPI.")
-    fastapi_logging.close_logger(logger)
+    logger.info("FastAPI Server stopped.")
