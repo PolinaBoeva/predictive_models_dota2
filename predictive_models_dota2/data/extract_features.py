@@ -1,8 +1,7 @@
 import pandas as pd
 from typing import Optional, Tuple, List, Iterable
-from dataclasses import dataclass
 
-from models.base import Player, Match
+from models.base import Match
 
 
 class DataCleaner:

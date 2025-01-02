@@ -1,11 +1,6 @@
 from typing import List, Tuple, Dict
-from concurrent.futures import ThreadPoolExecutor, Future
-import threading
 
-import pandas as pd
-from catboost import CatBoostClassifier
-from sklearn.linear_model import LinearRegression
-
+from predictive_models_dota2.data.datasets import get_train_dataset
 from models.base import (
     ModelId,
     ErrorMessage,
@@ -18,23 +13,22 @@ from models.requests import (
     SinglePredictRequest,
     PredictCsvRequest,
 )
-from predictive_models_dota2.clients.model_predictor import ModelsPredictor
-from predictive_models_dota2.clients.model_trainer import ModelTrainer
-from predictive_models_dota2.clients.models_database import ModelsDatabase
-from predictive_models_dota2.data.extract_features import DataPreprocessor
+from predictive_models_dota2.internal.model_predictor import ModelsPredictor
+from predictive_models_dota2.internal.model_trainer import ModelTrainer
+from predictive_models_dota2.internal.models_database import ModelsDatabase
 
 
-class ModelsClient:
-    def __init__(self, train_data_path: str = "data/prepared/dota_23_24.csv"):
+class ModelsService:
+    def __init__(self, train_data_path: str = "data/prepared/train.csv"):
         self._models_database = ModelsDatabase()
-        data_preprocessor = DataPreprocessor()
+        self.data_preprocessor, self.train_dataset = get_train_dataset(train_data_path)
         self._model_trainer = ModelTrainer(
             models_database=self._models_database,
-            train_data_path=train_data_path,
-            data_preprocessor=data_preprocessor,
+            train_dataset=self.train_dataset,
+            data_preprocessor=self.data_preprocessor,
         )
         self._model_predictor = ModelsPredictor(
-            models_database=self._models_database, data_preprocessor=data_preprocessor
+            models_database=self._models_database, data_preprocessor=self.data_preprocessor
         )
 
     def fit_model(self, request: FitRequest) -> ModelId:

@@ -8,7 +8,7 @@ from models.base import (
     PredictionProba,
 )
 from models.requests import PredictCsvRequest, SinglePredictRequest
-from predictive_models_dota2.clients.models_database import ModelsDatabase
+from predictive_models_dota2.internal.models_database import ModelsDatabase
 from predictive_models_dota2.data.extract_features import (
     DataPreprocessor,
     PredictionDataFetcher,
@@ -29,12 +29,12 @@ class ModelsPredictor:
         match_data = Match(radiant=request.radiant_team, dire=request.dire_team)
         X = self._prediction_data_fetcher.get_team_info_from_dataclass(match_data)
         prediction = model.predict(X)[0]
-        prediction_proba = model.predict_proba(X)[0, 1]
+        prediction_proba = model.predict_proba(X)[0]
 
         return SinglePredictResult(
             model_id=model.model_id,
-            prediction=self._get_win_team(prediction),
-            prediction_proba=PredictionProba(prediction_proba),
+            prediction=prediction,
+            prediction_proba=prediction_proba,
         )
 
     def predict_csv(self, request: PredictCsvRequest) -> PredictCsvResult:
@@ -47,9 +47,7 @@ class ModelsPredictor:
 
         return PredictCsvResult(
             model_id=model.model_id,
-            predictions=[self._get_win_team(prediction) for prediction in predictions],
-            prediction_probas=[PredictionProba(proba)[:, 1] for proba in prediction_probas],
+            predictions=predictions,
+            prediction_probas=prediction_probas,
         )
-
-    def _get_win_team(self, prediction: int) -> str:
-        return Prediction.RADIANT if prediction == 1 else Prediction.DIRE
+    

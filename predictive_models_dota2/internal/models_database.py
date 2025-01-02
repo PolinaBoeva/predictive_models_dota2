@@ -1,7 +1,7 @@
 from typing import Dict, List
 
 from models.base import ModelId, ModelInfo
-from predictive_models_dota2.clients.model import Model
+from predictive_models_dota2.internal.model import Model
 
 
 class ModelsDatabase:
@@ -14,7 +14,7 @@ class ModelsDatabase:
 
     def get_model(self, model_id: ModelId) -> Model:
         if model_id not in self._models:
-            raise ValueError(f"Model with id {model_id} not found")
+            raise ValueError(f"Model with id {model_id} not found") # TODO: сделать кастомную ошибку
         return self._models[model_id]
 
     def get_model_info(self, model_id: ModelId) -> ModelInfo:
@@ -25,11 +25,12 @@ class ModelsDatabase:
         return [ModelId(model_id) for model_id in self._models]
 
     def activate_model(self, model_id: ModelId):
+        # TODO: честная актиавция модели
         if model_id not in self._models:
-            raise ValueError(f"Model with id {model_id} not found")
+            raise ValueError(f"Model with id {model_id} not found") # TODO: сделать кастомную ошибку
         self.active_model_id = model_id
 
     def get_active_model(self) -> Model:
         if not self.active_model_id:
-            raise ValueError("No active model")
+            raise ValueError("No active model") # TODO: сделать кастомную ошибку
         return self._models[self.active_model_id]

@@ -1,8 +1,9 @@
+from typing import List
 from catboost import CatBoostClassifier
 from sklearn.linear_model import RidgeClassifier
 from sklearn.base import BaseEstimator
 
-from models.base import ModelInfo, ModelType, ModelId, Hyperparameters
+from models.base import ModelInfo, ModelType, ModelId, Hyperparameters, Prediction, PredictionProba
 
 
 class Model:
@@ -20,13 +21,17 @@ class Model:
         self.fit_time = None
 
     def fit(self, X_train, y_train):
-        return self.model.fit(X_train, y_train)
+        self.model.fit(X_train, y_train)
+        return self
 
-    def predict(self, X):
-        return self.model.predict(X)
+    def predict(self, X) -> List[Prediction]:
+        predictions = self.model.predict(X)
+        return [self._get_win_team(prediction) for prediction in predictions]
 
-    def predict_proba(self, X):
-        return self.model.predict_proba(X)
+    def predict_proba(self, X) -> List:
+        prediction_probas = self.model.predict_proba(X)
+        result = [PredictionProba(proba[1]) for proba in prediction_probas]
+        return result
 
     def get_info(self):
         # TODO: add feature importance
@@ -37,6 +42,9 @@ class Model:
             fit_time=self.fit_time,
             metrics=None,
         )
+    
+    def _get_win_team(self, prediction: int) -> Prediction:
+        return Prediction.RADIANT if prediction == 1 else Prediction.DIRE
 
 
 class ModelsFactory:

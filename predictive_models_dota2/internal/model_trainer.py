@@ -20,9 +20,9 @@ from models.requests import (
     SinglePredictRequest,
     PredictCsvRequest,
 )
-from predictive_models_dota2.clients.model import Model, ModelsFactory
-from predictive_models_dota2.clients.model_predictor import ModelsPredictor
-from predictive_models_dota2.clients.models_database import ModelsDatabase
+from predictive_models_dota2.internal.model import Model, ModelsFactory
+from predictive_models_dota2.internal.model_predictor import ModelsPredictor
+from predictive_models_dota2.internal.models_database import ModelsDatabase
 from predictive_models_dota2.data.datasets import TrainDataset
 from predictive_models_dota2.data.extract_features import (
     DataPreprocessor,
@@ -35,14 +35,13 @@ class ModelTrainer:
         self,
         models_database: ModelsDatabase,
         data_preprocessor: DataPreprocessor,
-        train_data_path: str,
+        train_dataset: TrainDataset,
     ):
         self._executor = ThreadPoolExecutor(max_workers=2)
-        self._models_database = models_database
         self._tasks: Dict[str, Future] = {}
-        self._train_data = TrainDataset(
-            data_preprocessor=data_preprocessor, train_data_path=train_data_path
-        )
+
+        self._models_database = models_database
+        self._train_dataset = train_dataset
 
     def start_fit(self, request: FitRequest) -> ModelId:
         model_id = request.modelId
@@ -61,20 +60,15 @@ class ModelTrainer:
         model_type = request.modelType
         hyperparameters = request.hyperparameters
 
-        classifier = ModelsFactory.create(
+        model = ModelsFactory.create(
             model_id=model_id, model_type=model_type, hyperparameters=hyperparameters
         )
 
-        X_train = self._train_data.X_train
-        y_train = self._train_data.y_train
+        X_train = self._train_dataset.X_train
+        y_train = self._train_dataset.y_train
 
-        classifier.fit(X_train, y_train)
-        model = Model(
-            model=classifier,
-            model_id=model_id,
-            model_type=model_type,
-            hyperparameters=hyperparameters,
-        )
+        model.fit(X_train, y_train)
+
         fit_time = time.time() - start_time
         model.fit_time = fit_time
         return model
@@ -83,7 +77,7 @@ class ModelTrainer:
         future = self._tasks.get(model_id)
 
         if not future:
-            raise ValueError("Model not found")
+            raise ValueError("Model not found") # TODO: сделать кастомную ошибку
 
         if future.running():
             return FitStatus.RUNNING, None

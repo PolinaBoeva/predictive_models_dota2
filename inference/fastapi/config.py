@@ -6,6 +6,9 @@ class LoggingConfig(BaseSettings):
     log_level: str = "INFO"
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     log_datefmt: str = "%Y-%m-%d %H:%M:%S"
+    log_file: str = "logs/fastapi/app.log"
+    log_max_bytes: int = 1000000
+    log_backup_count: int = 3
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
