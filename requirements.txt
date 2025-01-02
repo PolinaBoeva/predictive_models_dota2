@@ -4,4 +4,8 @@ pandas
 numpy
 scikit-learn
 catboost
-
+fastapi[standard]
+uvicorn
+pydantic-settings
+pydantic
+logging

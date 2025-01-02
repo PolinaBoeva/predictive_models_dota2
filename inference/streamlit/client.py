@@ -16,10 +16,10 @@ class ModelsAPIClient:
         logger.info(f"Ответ от сервера: {response.status_code}, {response.json()}")
         return response.json()
 
-    def get_fit_status(self):
+    def get_fit_status(self, model_id: str):
         """Получение статуса асинхронной задачи обучения."""
         logger.info("Получение статуса обучения модели.")
-        response = requests.get(f"{self.base_url}/fit/status")
+        response = requests.get(f"{self.base_url}/fit/status", params={"model_id": model_id})
         logger.info(f"Ответ от сервера: {response.status_code}, {response.json()}")
         return response.json()
 
@@ -33,7 +33,7 @@ class ModelsAPIClient:
     def activate_model(self, model_id: str):
         """Установка активной модели для прогноза."""
         logger.info(f"Активация модели с ID: {model_id}.")
-        response = requests.put(f"{self.base_url}/activate", json={"model_id": model_id})
+        response = requests.put(f"{self.base_url}/activate", params={"model_id": model_id})
         logger.info(f"Ответ от сервера: {response.status_code}, {response.json()}")
         return response.json()
 
@@ -73,4 +73,3 @@ class DataAPIClient:
         else:
             logger.error("Не удалось получить Account IDs из API.")
             raise Exception("Не удалось получить Account IDs из API.")
-
