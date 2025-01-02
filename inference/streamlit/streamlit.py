@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def main():
     # Инициализация API
-    host = "http://****"  # Замените на рабочий хост
+    host = ("http://localhost")  # Замените на рабочий хост
     port = 8000  # Замените на рабочий порт
     models_api_client = ModelsAPIClient(host, port)
     data_api_client = DataAPIClient(host, port)

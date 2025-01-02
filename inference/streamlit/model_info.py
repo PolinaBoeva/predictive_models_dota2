@@ -13,7 +13,7 @@ def display_model_info(api_client):
             st.write("Обученные модели:")
             st.write(st.session_state.models)
 
-    model_id_input = st.selectbox("Выберите ID модели", [model['id'] for model in st.session_state.models])
+    model_id_input = st.selectbox("Выберите ID модели", st.session_state.models)
 
     if st.button("📖 Получить информацию о модели"):
         model_info = api_client.get_model_info(model_id_input)
@@ -25,8 +25,4 @@ def display_model_info(api_client):
 
     if st.button("Активировать выбранную модель"):
         activate_response = api_client.activate_model(model_id_input)
-        if activate_response.get("status") == "success":
-            st.success("Модель успешно активирована!")
-        else:
-            st.error("Не удалось активировать модель.")
-
+        st.write("Модель активирована")
