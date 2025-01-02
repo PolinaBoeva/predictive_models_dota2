@@ -6,12 +6,6 @@ from model_info import display_model_info
 from eda_streamlit import run_eda_streamlit
 import logging
 
-import ptvsd
-
-ptvsd.enable_attach(address=("localhost", 5678), redirect_output=True)
-
-ptvsd.wait_for_attach()
-
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
