@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import logging
 
-from utils import get_top_10_heroes
+from utils import get_top_10_heroes, clean_columns
 from plots import (plot_metric_histogram,
                    create_result_pie_chart,
                    create_distribution_plot,
@@ -23,6 +23,7 @@ def display_dataset_info(df):
     st.write("### Основная информация о данных")
     logger.info("Отображение основной информации о данных.")
     with st.expander("### Посмотреть основную информацию"):
+
         st.dataframe(df.head(2000))
         st.write(f"**Размер датасета:** {df.shape[0]} строк, {df.shape[1]} столбцов")
 
@@ -42,17 +43,19 @@ def display_selected_player_info(df):
     st.write("### Статистика по выбранному игроку")
     logger.info("Отображение статистики по выбранному игроку.")
     with st.expander("### Посмотреть статистику по игроку"):
-        match_count = df.groupby('account_id')['match_id'].count()
-        most_matches_account_id = match_count.idxmax()
 
-        account_ids = sorted(df['account_id'].unique())
+        match_count = df.groupby('account_id')['match_id'].count()
+        most_matches_account_id = match_count.idxmax()  # account_id с наибольшим количеством матчей
+
+        account_ids = sorted(df['account_id'].unique(), key=lambda x: int(x))
         default_index = account_ids.index(most_matches_account_id)
 
         selected_account_id = st.selectbox(
             "Пожалуйста, выберите account_id игрока, по которому хотите посмотреть статистику:",
             account_ids,
-            index=default_index  # игрок с наибольшим количеством матчей по умолчанию
+            index=default_index
         )
+
         player_data = df[df['account_id'] == selected_account_id]
 
         st.write("##### Герои игрока и статистика по ним:")
@@ -95,18 +98,19 @@ def display_selected_player_match(df):
     st.write("### Статистика по выбранному матчу")
     logger.info("Отображение статистики по выбранному матчу.")
     with st.expander("### Посмотреть статистику по матчу"):
-        max_players_match_id = str(df['match_id'].value_counts().idxmax())
+        max_players_match_id = df['match_id'].value_counts().idxmax()
+        max_players_match_id_str = str(max_players_match_id)
 
-        match_ids = sorted([str(match_id) for match_id in df['match_id'].unique()])
+        match_ids = sorted([str(match_id) for match_id in df['match_id'].unique()], key=lambda x: int(x))
 
-        default_index = match_ids.index(max_players_match_id)
+        default_index = match_ids.index(max_players_match_id_str)
 
         selected_match_id = st.selectbox(
             "Пожалуйста, выберите match_id, по которому хотите посмотреть статистику:",
             match_ids,
-            index=default_index)
-
-        match_data = df[df['match_id'] == int(selected_match_id)]
+            index=default_index
+        )
+        match_data = df[df['match_id'] == selected_match_id]
 
         # Какая команда победила
         radiant_win = match_data['isRadiant'].iloc[0] == 1 and match_data['win'].iloc[0] == 1
@@ -224,7 +228,9 @@ def run_eda_streamlit():
 
     if upload_file is not None:
         logger.info(f"Загружен файл: {upload_file.name}")
-        df = pd.read_csv(upload_file)
+        df = pd.read_csv(upload_file, index_col=[0])
+
+        df = clean_columns(df, ["account_id", "match_id"])
 
         display_dataset_info(df)
         st.write('---')
