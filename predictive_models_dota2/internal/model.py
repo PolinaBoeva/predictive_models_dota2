@@ -1,5 +1,6 @@
 from typing import List
 from catboost import CatBoostClassifier
+import numpy as np
 from sklearn.linear_model import RidgeClassifier
 from sklearn.base import BaseEstimator
 
@@ -29,8 +30,12 @@ class Model:
         return [self._get_win_team(prediction) for prediction in predictions]
 
     def predict_proba(self, X) -> List:
-        prediction_probas = self.model.predict_proba(X)
-        result = [PredictionProba(proba[1]) for proba in prediction_probas]
+        if self.model_type == ModelType.RIDGE_CLASSIFIER:
+            d = self.model.decision_function(X)
+            prediction_probas = 1/(1+(np.exp((-d))))
+        else:
+            prediction_probas = self.model.predict_proba(X)[:, 1]
+        result = [PredictionProba(proba) for proba in prediction_probas]
         return result
 
     def get_info(self):

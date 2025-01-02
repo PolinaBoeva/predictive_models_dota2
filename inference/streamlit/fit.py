@@ -21,16 +21,18 @@ def fit_model(api_client: ModelsAPIClient):
     st.header("Обучение модели")
     logger.info("Инициализация процесса обучения модели.")
 
-    model_type = st.selectbox("Выберите модель", ["⚖️ Ridge Classifier", "🧠 CatBoost Classifier"])
-    logger.info(f"Выбрана модель: {model_type}")
+    model_type_input = st.selectbox("Выберите модель", ["⚖️ Ridge Classifier", "🧠 CatBoost Classifier"])
+    logger.info(f"Выбрана модель: {model_type_input}")
 
     st.subheader("Гиперпараметры модели")
 
     # Выбор гиперпараметров в зависимости от типа модели
-    if model_type == "⚖️ Ridge Classifier":
+    if model_type_input == "⚖️ Ridge Classifier":
+        model_type = "RidgeClassifier"
         hyperparameters = get_ridge_params()
         logger.info(f"Параметры Ridge Classifier: {hyperparameters}")
-    elif model_type == "🧠 CatBoost Classifier":
+    elif model_type_input == "🧠 CatBoost Classifier":
+        model_type = "CatBoost"
         hyperparameters = get_catboost_params()
         logger.info(f"Параметры CatBoost Classifier: {hyperparameters}")
 
@@ -41,7 +43,7 @@ def fit_model(api_client: ModelsAPIClient):
         # Запуск обучения модели
         logger.info("Запуск обучения модели.")
         start_time = time.time()
-        fit_response = api_client.fit_model(hyperparameters)
+        fit_response = api_client.fit_model(fit_request)
         st.success("Обучение модели начато!")
 
         # Проверка статуса обучения
