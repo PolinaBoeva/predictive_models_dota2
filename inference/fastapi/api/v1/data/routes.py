@@ -15,6 +15,7 @@ data_service = DataService()
     summary="Получить список всех account_id игроков",
 )
 async def get_account_ids():
-    logger.info("Запрос списка всех account_id игроков.")
+    logger.info("GET request /api/v1/data/account_ids")
     account_ids = data_service.get_account_ids()
+    logger.info(f"Account IDs: {account_ids}")
     return AccountIdsListResponse(account_ids=account_ids)

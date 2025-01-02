@@ -40,7 +40,7 @@ class ModelsPredictor:
     def predict_csv(self, request: PredictCsvRequest) -> PredictCsvResult:
         model = self._models_database.get_active_model()
 
-        data = pd.read_csv(request.csv_data.decode("utf-8"))
+        data = pd.read_csv(request.file)
         X = self._prediction_data_fetcher.get_team_info_from_dataframe(data)
         predictions = model.predict(X)
         prediction_probas = model.predict_proba(X)
