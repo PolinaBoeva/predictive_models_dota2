@@ -9,19 +9,18 @@ logger = logging.getLogger(__name__)
 
 # Гистограммы распределения значений признаков по матчам
 def plot_metric_histogram(data, columns_to_plot, selected_metric):
-    """Создание гистограммы для выбранной метрики в зависимости от номера матча."""
+    """Создание гистограммы для выбранной метрики."""
     logger.info(f"Построение гистограммы для метрики: {selected_metric}.")
 
     selected_column = columns_to_plot[selected_metric]
-    sorted_data = data.sort_values(by='match_id')
 
     fig = px.histogram(
-        sorted_data,
-        x='match_id',
-        y=selected_column,
-        labels={'match_id': 'Номер матча', selected_column: selected_metric},
-        nbins=len(data['match_id'].unique()),
+        data,
+        x=selected_column,
+        labels={selected_column: selected_metric},
+        nbins=30,
     )
+    return fig
 
     fig.update_layout(
         bargap=0,

@@ -20,3 +20,9 @@ def get_catboost_params(params):
     params["iterations"] = st.number_input("Iterations", value=100, min_value=1)
     params["l2_leaf_reg"] = st.number_input("L2 Leaf Regularization", value=3, min_value=1, max_value=10)
 
+def clean_columns(df, columns):
+    """Функция для преобразования типов данных для отображения в Streamlit."""
+    for column in columns:
+        df[column] = (df[column].astype(str).str.replace(",", "").str.replace(".0", "", regex=False))
+    return df
+
