@@ -19,6 +19,11 @@ class Player(BaseModel):
 Team = List[Player]
 
 
+class Match(BaseModel):
+    radiant: Team
+    dire: Team
+
+
 class ModelType(str, Enum):
     CAT_BOOST = "CatBoost"
     RIDGE_CLASSIFIER = "RidgeClassifier"

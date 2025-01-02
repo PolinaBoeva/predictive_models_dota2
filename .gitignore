@@ -2,8 +2,10 @@
 data/*/*.csv
 
 # Models
+catboost_info/
 
-
+# Vscode
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

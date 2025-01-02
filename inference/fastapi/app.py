@@ -1,19 +1,15 @@
-import logging
-
+from fastapi.responses import JSONResponse
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
 from config import get_config
+import fastapi_logging
+
 from api.v1.data import routes as data_routes
 from api.v1.models import routes as models_routes
 from api import root as root_routes
 
-
-logging.basicConfig(
-    level=get_config().log_config.log_level,
-    format=get_config().log_config.log_format,
-    datefmt=get_config().log_config.log_datefmt,
-)
+logger = fastapi_logging.get_logger(__name__)
 
 app = FastAPI(
     title=get_config().fastapi_config.title,
@@ -27,10 +23,22 @@ app.include_router(root_routes.router)
 app.include_router(models_routes.router, prefix="/api/v1/models", tags=["models"])
 app.include_router(data_routes.router, prefix="/api/v1/data", tags=["data"])
 
+
+@app.exception_handler(ValueError)
+async def value_error_exception_handler(request: Request, exc: ValueError):
+    return JSONResponse(
+        status_code=400,
+        content={"message": str(exc)},
+    )
+
+
 if __name__ == "__main__":
+    logger.info("Запуск сервера FastAPI.")
     uvicorn.run(
         "app:app",
         host=get_config().fastapi_config.host,
         port=get_config().fastapi_config.port,
         reload=True,
     )
+    logger.info("Остановка сервера FastAPI.")
+    fastapi_logging.close_logger(logger)
